@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-// Node represents information about a Kafka node.
+// Node represents information about a Atomstate node.
 type Node struct {
 	// ID is the unique identifier of the node.
 	ID int
@@ -92,6 +92,17 @@ func (n Node) Rack() string {
 }
 
 // String provides a string representation of the node.
+//
+// Returns:
+//
+//	string: a string representation of the node in the format "Host:Port (id: IDString() rack: Rack())".
+//
+// Example:
+//
+//	rackName := "rack1"
+//	node := Node{ID: 1, Host: "localhost", Port: 9092, RackName: &rackName}
+//	nodeStr := node.String()
+//	fmt.Println(nodeStr) // Output: localhost:9092 (id: 1 rack: rack1)
 func (n Node) String() string {
 	rackStr := "none"
 	if n.HasRack() {
@@ -101,6 +112,24 @@ func (n Node) String() string {
 }
 
 // Equal checks if two nodes are equal.
+//
+// Parameters:
+//
+//	other (Node): the other node to compare with.
+//
+// Returns:
+//
+//	bool: true if the nodes are equal (same ID, Port, Host, and RackName), false otherwise.
+//
+// Example:
+//
+//	node1 := Node{ID: 1, Host: "localhost", Port: 9092}
+//	node2 := Node{ID: 1, Host: "localhost", Port: 9092}
+//	if node1.Equal(node2) {
+//	    fmt.Println("Nodes are equal")
+//	} else {
+//	    fmt.Println("Nodes are not equal")
+//	}
 func (n Node) Equal(other Node) bool {
 	if n.ID != other.ID || n.Port != other.Port || n.Host != other.Host {
 		return false
@@ -115,6 +144,19 @@ func (n Node) Equal(other Node) bool {
 }
 
 // HashCode calculates the hash code for the node.
+// This implementation uses a simple hash function that combines the individual components
+// of the Node struct using a prime number (31) as the multiplier.
+//
+// Returns:
+//
+//	int: the hash code for the node.
+//
+// Example:
+//
+//	rackName := "rack1"
+//	node := Node{ID: 1, Host: "localhost", Port: 9092, RackName: &rackName}
+//	hash := node.HashCode()
+//	fmt.Println("Node hash code:", hash)
 func (n Node) HashCode() int {
 	hash := 1
 	hash = hash*31 + n.ID        // Add ID
