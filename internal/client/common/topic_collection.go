@@ -11,6 +11,24 @@ type TopicCollection interface {
 	TopicNames() []string
 }
 
+// CombinedTopicCollection represents a collection of topics defined by both name and ID.
+type CombinedTopicCollection struct {
+	topicIds   *TopicIdCollection
+	topicNames *TopicNameCollection
+}
+
+// NewTopicCollection creates a new CombinedTopicCollection with the given topic IDs and names.
+func NewTopicCollection(ids []Uuid, names []string) (*CombinedTopicCollection, error) {
+	if len(ids) != len(names) {
+		return nil, errors.New("topic IDs and names must have the same length")
+	}
+
+	return &CombinedTopicCollection{
+		topicIds:   NewTopicIdCollection(ids),
+		topicNames: NewTopicNameCollection(names),
+	}, nil
+}
+
 // TopicIdCollection represents a collection of topics defined by their topic ID.
 type TopicIdCollection struct {
 	topicIds []Uuid
