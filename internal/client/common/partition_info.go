@@ -19,6 +19,14 @@ type PartitionInfo struct {
 }
 
 // NewPartitionInfo creates a new PartitionInfo instance.
+//
+// Example:
+//
+//	leaderNode := &Node{ID: 1}
+//	replicaNodes := []*Node{{ID: 2}, {ID: 3}}
+//	inSyncNodes := []*Node{{ID: 2}}
+//
+//	partitionInfo := NewPartitionInfo("example-topic", 0, leaderNode, replicaNodes, inSyncNodes)
 func NewPartitionInfo(topic string, partition int, leader *Node, replicas, inSyncReplicas []*Node) *PartitionInfo {
 	return &PartitionInfo{
 		Topic:           topic,
@@ -31,6 +39,15 @@ func NewPartitionInfo(topic string, partition int, leader *Node, replicas, inSyn
 }
 
 // NewPartitionInfoWithOffline creates a new PartitionInfo instance with offline replicas.
+//
+// Example:
+//
+//	leaderNode := &Node{ID: 1}
+//	replicaNodes := []*Node{{ID: 2}, {ID: 3}}
+//	inSyncNodes := []*Node{{ID: 2}}
+//	offlineNodes := []*Node{{ID: 3}}
+//
+//	partitionInfo := NewPartitionInfoWithOffline("example-topic", 0, leaderNode, replicaNodes, inSyncNodes, offlineNodes)
 func NewPartitionInfoWithOffline(topic string, partition int, leader *Node, replicas, inSyncReplicas, offlineReplicas []*Node) *PartitionInfo {
 	return &PartitionInfo{
 		Topic:           topic,
@@ -42,37 +59,43 @@ func NewPartitionInfoWithOffline(topic string, partition int, leader *Node, repl
 	}
 }
 
-// Topic returns the topic name.
+// GetTopic returns the topic name.
 func (p *PartitionInfo) GetTopic() string {
 	return p.Topic
 }
 
-// Partition returns the partition ID.
+// GetPartition returns the partition ID.
 func (p *PartitionInfo) GetPartition() int {
 	return p.Partition
 }
 
-// Leader returns the node currently acting as a leader for this partition or nil if there is no leader.
+// GetLeader returns the node currently acting as a leader for this partition or nil if there is no leader.
 func (p *PartitionInfo) GetLeader() *Node {
 	return p.Leader
 }
 
-// Replicas returns the complete set of replicas for this partition regardless of whether they are alive or up-to-date.
+// GetReplicas returns the complete set of replicas for this partition regardless of whether they are alive or up-to-date.
 func (p *PartitionInfo) GetReplicas() []*Node {
 	return p.Replicas
 }
 
-// InSyncReplicas returns the subset of the replicas that are in sync, that is caught-up to the leader.
+// GetInSyncReplicas returns the subset of the replicas that are in sync, that is caught-up to the leader.
 func (p *PartitionInfo) GetInSyncReplicas() []*Node {
 	return p.InSyncReplicas
 }
 
-// OfflineReplicas returns the subset of the replicas that are offline.
+// GetOfflineReplicas returns the subset of the replicas that are offline.
 func (p *PartitionInfo) GetOfflineReplicas() []*Node {
 	return p.OfflineReplicas
 }
 
 // Hash generates a hash code for the PartitionInfo.
+//
+// Example:
+//
+//	partitionInfo := NewPartitionInfo("example-topic", 0, leaderNode, replicaNodes, inSyncNodes)
+//	hash := partitionInfo.Hash()
+//	fmt.Println("Hash Code:", hash)
 func (p *PartitionInfo) Hash() uint32 {
 	h := fnv.New32a()
 	h.Write([]byte(p.Topic))
