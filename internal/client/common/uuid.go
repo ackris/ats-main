@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/base64"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -90,10 +91,8 @@ func unsafeRandomUuid(r *rand.Rand) Uuid {
 
 	// Construct UUID from bytes
 	return NewUuid(
-		int64(b[0])<<56|int64(b[1])<<48|int64(b[2])<<40|int64(b[3])<<32|
-			int64(b[4])<<24|int64(b[5])<<16|int64(b[6])<<8|int64(b[7]),
-		int64(b[8])<<56|int64(b[9])<<48|int64(b[10])<<40|int64(b[11])<<32|
-			int64(b[12])<<24|int64(b[13])<<16|int64(b[14])<<8|int64(b[15]),
+		int64(binary.BigEndian.Uint64(b[:8])),
+		int64(binary.BigEndian.Uint64(b[8:])),
 	)
 }
 
@@ -158,10 +157,8 @@ func FromString(s string) (Uuid, error) {
 	}
 
 	return Uuid{
-		mostSignificantBits: int64(b[0])<<56 | int64(b[1])<<48 | int64(b[2])<<40 | int64(b[3])<<32 |
-			int64(b[4])<<24 | int64(b[5])<<16 | int64(b[6])<<8 | int64(b[7]),
-		leastSignificantBits: int64(b[8])<<56 | int64(b[9])<<48 | int64(b[10])<<40 | int64(b[11])<<32 |
-			int64(b[12])<<24 | int64(b[13])<<16 | int64(b[14])<<8 | int64(b[15]),
+		mostSignificantBits:  int64(binary.BigEndian.Uint64(b[:8])),
+		leastSignificantBits: int64(binary.BigEndian.Uint64(b[8:])),
 	}, nil
 }
 
@@ -177,26 +174,8 @@ func FromString(s string) (Uuid, error) {
 //	fmt.Println(bytes) // Output: [byte representation of the UUID]
 func (u Uuid) getBytes() []byte {
 	b := make([]byte, uuidSize)
-	copy(b[0:8], []byte{
-		byte(u.mostSignificantBits >> 56),
-		byte(u.mostSignificantBits >> 48),
-		byte(u.mostSignificantBits >> 40),
-		byte(u.mostSignificantBits >> 32),
-		byte(u.mostSignificantBits >> 24),
-		byte(u.mostSignificantBits >> 16),
-		byte(u.mostSignificantBits >> 8),
-		byte(u.mostSignificantBits),
-	})
-	copy(b[8:16], []byte{
-		byte(u.leastSignificantBits >> 56),
-		byte(u.leastSignificantBits >> 48),
-		byte(u.leastSignificantBits >> 40),
-		byte(u.leastSignificantBits >> 32),
-		byte(u.leastSignificantBits >> 24),
-		byte(u.leastSignificantBits >> 16),
-		byte(u.leastSignificantBits >> 8),
-		byte(u.leastSignificantBits),
-	})
+	binary.BigEndian.PutUint64(b[:8], uint64(u.mostSignificantBits))
+	binary.BigEndian.PutUint64(b[8:], uint64(u.leastSignificantBits))
 	return b
 }
 
@@ -217,19 +196,18 @@ func (u Uuid) getBytes() []byte {
 //	result := u1.Compare(u2)
 //	fmt.Println(result) // Output: -1 (u1 is less than u2)
 func (u Uuid) Compare(other Uuid) int {
-	if u.mostSignificantBits > other.mostSignificantBits {
+	switch {
+	case u.mostSignificantBits > other.mostSignificantBits:
 		return 1
-	}
-	if u.mostSignificantBits < other.mostSignificantBits {
+	case u.mostSignificantBits < other.mostSignificantBits:
 		return -1
-	}
-	if u.leastSignificantBits > other.leastSignificantBits {
+	case u.leastSignificantBits > other.leastSignificantBits:
 		return 1
-	}
-	if u.leastSignificantBits < other.leastSignificantBits {
+	case u.leastSignificantBits < other.leastSignificantBits:
 		return -1
+	default:
+		return 0
 	}
-	return 0
 }
 
 // ToArray converts a slice of Uuid to an array of [2]int64.
