@@ -7,9 +7,13 @@ import (
 
 // Node represents information about a Kafka node.
 type Node struct {
-	ID       int
-	Host     string
-	Port     int
+	// ID is the unique identifier of the node.
+	ID int
+	// Host is the hostname or IP address of the node.
+	Host string
+	// Port is the port number of the node.
+	Port int
+	// RackName is the name of the rack where the node is located.
 	RackName *string
 }
 
@@ -17,21 +21,69 @@ type Node struct {
 var NoNode = Node{ID: -1, Host: "", Port: -1}
 
 // IsEmpty checks whether the node is empty.
+//
+// Returns:
+//
+//	bool: true if the node is empty (Host is empty or Port is less than 0), false otherwise.
+//
+// Example:
+//
+//	node := Node{Host: "localhost", Port: 9092}
+//	if node.IsEmpty() {
+//	    fmt.Println("Node is empty")
+//	} else {
+//	    fmt.Println("Node is not empty")
+//	}
 func (n Node) IsEmpty() bool {
 	return n.Host == "" || n.Port < 0
 }
 
 // IDString returns the string representation of the node ID.
+//
+// Returns:
+//
+//	string: the string representation of the node ID.
+//
+// Example:
+//
+//	node := Node{ID: 42}
+//	idStr := node.IDString()
+//	fmt.Println("Node ID:", idStr) // Output: Node ID: 42
 func (n Node) IDString() string {
 	return strconv.Itoa(n.ID)
 }
 
 // HasRack checks if the node has a defined rack.
+//
+// Returns:
+//
+//	bool: true if the node has a defined rack (RackName is not nil), false otherwise.
+//
+// Example:
+//
+//	rackName := "rack1"
+//	node := Node{RackName: &rackName}
+//	if node.HasRack() {
+//	    fmt.Println("Node has a defined rack")
+//	} else {
+//	    fmt.Println("Node does not have a defined rack")
+//	}
 func (n Node) HasRack() bool {
 	return n.RackName != nil
 }
 
 // Rack returns the rack for this node. It returns an empty string if the rack is not defined.
+//
+// Returns:
+//
+//	string: the rack name if defined, otherwise an empty string.
+//
+// Example:
+//
+//	rackName := "rack1"
+//	node := Node{RackName: &rackName}
+//	rack := node.Rack()
+//	fmt.Println("Node rack:", rack) // Output: Node rack: rack1
 func (n Node) Rack() string {
 	if n.RackName != nil {
 		return *n.RackName
