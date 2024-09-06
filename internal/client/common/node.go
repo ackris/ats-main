@@ -64,12 +64,12 @@ func (n Node) Equal(other Node) bool {
 
 // HashCode calculates the hash code for the node.
 func (n Node) HashCode() int {
-	hash := 31
-	hash = hash*31 + len(n.Host)
-	hash = hash*31 + n.ID
-	hash = hash*31 + n.Port
+	hash := 1
+	hash = hash*31 + n.ID        // Add ID
+	hash = hash*31 + len(n.Host) // Add length of Host
+	hash = hash*31 + n.Port      // Add Port
 	if n.RackName != nil {
-		hash = hash*31 + len(*n.RackName)
+		hash = hash*31 + len(*n.RackName) // Add length of RackName
 	}
 	return hash
 }
