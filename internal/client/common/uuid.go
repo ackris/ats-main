@@ -213,13 +213,13 @@ func (u Uuid) Compare(other Uuid) int {
 	return 0
 }
 
-// ToArray converts a slice of Uuid to an array of [2]int64.
+// ToArray converts a slice of Uuid to an array of [2]uint64.
 //
 // Parameters:
 //   - slice: A slice of Uuid instances to convert.
 //
 // Returns:
-//   - An array of [2]int64 where each element contains the most and least significant bits of the UUID.
+//   - An array of [2]uint64 where each element contains the most and least significant bits of the UUID.
 //
 // Example:
 //
@@ -234,17 +234,17 @@ func ToArray(slice []Uuid) [][2]uint64 {
 	return arr
 }
 
-// ToList converts an array of [2]int64 to a slice of Uuid.
+// ToList converts an array of [2]uint64 to a slice of Uuid.
 //
 // Parameters:
-//   - arr: An array of [2]int64 to convert.
+//   - arr: An array of [2]uint64 to convert.
 //
 // Returns:
 //   - A slice of Uuid instances created from the provided array.
 //
 // Example:
 //
-//	arr := [][2]int64{{0, 1}, {0, 2}}
+//	arr := [][2]uint64{{0, 1}, {0, 2}}
 //	uuids := ToList(arr)
 //	fmt.Println(uuids[0].String()) // Output: Base64 encoded UUID of {0 1}
 func ToList(arr [][2]uint64) []Uuid {
