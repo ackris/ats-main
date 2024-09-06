@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"hash/fnv"
 	"strings"
 )
 
@@ -15,6 +16,86 @@ type PartitionInfo struct {
 	Replicas        []*Node // The complete set of replicas for this partition
 	InSyncReplicas  []*Node // The subset of replicas that are in sync with the leader
 	OfflineReplicas []*Node // The subset of replicas that are offline
+}
+
+// NewPartitionInfo creates a new PartitionInfo instance.
+func NewPartitionInfo(topic string, partition int, leader *Node, replicas, inSyncReplicas []*Node) *PartitionInfo {
+	return &PartitionInfo{
+		Topic:           topic,
+		Partition:       partition,
+		Leader:          leader,
+		Replicas:        replicas,
+		InSyncReplicas:  inSyncReplicas,
+		OfflineReplicas: []*Node{}, // Default to empty slice
+	}
+}
+
+// NewPartitionInfoWithOffline creates a new PartitionInfo instance with offline replicas.
+func NewPartitionInfoWithOffline(topic string, partition int, leader *Node, replicas, inSyncReplicas, offlineReplicas []*Node) *PartitionInfo {
+	return &PartitionInfo{
+		Topic:           topic,
+		Partition:       partition,
+		Leader:          leader,
+		Replicas:        replicas,
+		InSyncReplicas:  inSyncReplicas,
+		OfflineReplicas: offlineReplicas,
+	}
+}
+
+// Topic returns the topic name.
+func (p *PartitionInfo) GetTopic() string {
+	return p.Topic
+}
+
+// Partition returns the partition ID.
+func (p *PartitionInfo) GetPartition() int {
+	return p.Partition
+}
+
+// Leader returns the node currently acting as a leader for this partition or nil if there is no leader.
+func (p *PartitionInfo) GetLeader() *Node {
+	return p.Leader
+}
+
+// Replicas returns the complete set of replicas for this partition regardless of whether they are alive or up-to-date.
+func (p *PartitionInfo) GetReplicas() []*Node {
+	return p.Replicas
+}
+
+// InSyncReplicas returns the subset of the replicas that are in sync, that is caught-up to the leader.
+func (p *PartitionInfo) GetInSyncReplicas() []*Node {
+	return p.InSyncReplicas
+}
+
+// OfflineReplicas returns the subset of the replicas that are offline.
+func (p *PartitionInfo) GetOfflineReplicas() []*Node {
+	return p.OfflineReplicas
+}
+
+// Hash generates a hash code for the PartitionInfo.
+func (p *PartitionInfo) Hash() uint32 {
+	h := fnv.New32a()
+	h.Write([]byte(p.Topic))
+	h.Write([]byte(fmt.Sprintf("%d", p.Partition)))
+	if p.Leader != nil {
+		h.Write([]byte(fmt.Sprintf("%d", p.Leader.ID)))
+	}
+	for _, replica := range p.Replicas {
+		if replica != nil {
+			h.Write([]byte(fmt.Sprintf("%d", replica.ID)))
+		}
+	}
+	for _, inSyncReplica := range p.InSyncReplicas {
+		if inSyncReplica != nil {
+			h.Write([]byte(fmt.Sprintf("%d", inSyncReplica.ID)))
+		}
+	}
+	for _, offlineReplica := range p.OfflineReplicas {
+		if offlineReplica != nil {
+			h.Write([]byte(fmt.Sprintf("%d", offlineReplica.ID)))
+		}
+	}
+	return h.Sum32()
 }
 
 // FormatNodeIDs formats the node IDs from a slice of Node pointers for display.

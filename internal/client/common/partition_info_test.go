@@ -1,6 +1,9 @@
 package common
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 // TestFormatNodeIDs tests the FormatNodeIDs function.
 func TestFormatNodeIDs(t *testing.T) {
@@ -120,5 +123,86 @@ func TestSlicesEqual(t *testing.T) {
 				t.Errorf("SlicesEqual() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestNewPartitionInfo(t *testing.T) {
+	leaderNode := &Node{ID: 1}
+	replicaNodes := []*Node{{ID: 2}, {ID: 3}}
+	inSyncNodes := []*Node{{ID: 2}}
+
+	partitionInfo := NewPartitionInfo("example-topic", 0, leaderNode, replicaNodes, inSyncNodes)
+
+	if partitionInfo.GetTopic() != "example-topic" {
+		t.Errorf("Expected topic to be 'example-topic', got %s", partitionInfo.GetTopic())
+	}
+
+	if partitionInfo.GetPartition() != 0 {
+		t.Errorf("Expected partition to be 0, got %d", partitionInfo.GetPartition())
+	}
+
+	if partitionInfo.GetLeader() != leaderNode {
+		t.Errorf("Expected leader to be %v, got %v", leaderNode, partitionInfo.GetLeader())
+	}
+
+	if !reflect.DeepEqual(partitionInfo.GetReplicas(), replicaNodes) {
+		t.Errorf("Expected replicas to be %v, got %v", replicaNodes, partitionInfo.GetReplicas())
+	}
+
+	if !reflect.DeepEqual(partitionInfo.GetInSyncReplicas(), inSyncNodes) {
+		t.Errorf("Expected in-sync replicas to be %v, got %v", inSyncNodes, partitionInfo.GetInSyncReplicas())
+	}
+
+	if len(partitionInfo.GetOfflineReplicas()) != 0 {
+		t.Errorf("Expected offline replicas to be empty, got %v", partitionInfo.GetOfflineReplicas())
+	}
+}
+
+func TestNewPartitionInfoWithOffline(t *testing.T) {
+	leaderNode := &Node{ID: 1}
+	replicaNodes := []*Node{{ID: 2}, {ID: 3}}
+	inSyncNodes := []*Node{{ID: 2}}
+	offlineNodes := []*Node{{ID: 3}}
+
+	partitionInfo := NewPartitionInfoWithOffline("example-topic", 0, leaderNode, replicaNodes, inSyncNodes, offlineNodes)
+
+	if partitionInfo.GetTopic() != "example-topic" {
+		t.Errorf("Expected topic to be 'example-topic', got %s", partitionInfo.GetTopic())
+	}
+
+	if partitionInfo.GetPartition() != 0 {
+		t.Errorf("Expected partition to be 0, got %d", partitionInfo.GetPartition())
+	}
+
+	if partitionInfo.GetLeader() != leaderNode {
+		t.Errorf("Expected leader to be %v, got %v", leaderNode, partitionInfo.GetLeader())
+	}
+
+	if !reflect.DeepEqual(partitionInfo.GetReplicas(), replicaNodes) {
+		t.Errorf("Expected replicas to be %v, got %v", replicaNodes, partitionInfo.GetReplicas())
+	}
+
+	if !reflect.DeepEqual(partitionInfo.GetInSyncReplicas(), inSyncNodes) {
+		t.Errorf("Expected in-sync replicas to be %v, got %v", inSyncNodes, partitionInfo.GetInSyncReplicas())
+	}
+
+	if !reflect.DeepEqual(partitionInfo.GetOfflineReplicas(), offlineNodes) {
+		t.Errorf("Expected offline replicas to be %v, got %v", offlineNodes, partitionInfo.GetOfflineReplicas())
+	}
+}
+
+func TestHash(t *testing.T) {
+	leaderNode := &Node{ID: 1}
+	replicaNodes := []*Node{{ID: 2}, {ID: 3}}
+	inSyncNodes := []*Node{{ID: 2}}
+
+	partitionInfo := NewPartitionInfo("example-topic", 0, leaderNode, replicaNodes, inSyncNodes)
+	hash1 := partitionInfo.Hash()
+
+	partitionInfo = NewPartitionInfo("example-topic", 0, leaderNode, replicaNodes, inSyncNodes)
+	hash2 := partitionInfo.Hash()
+
+	if hash1 != hash2 {
+		t.Errorf("Expected hashes to be equal, got %d and %d", hash1, hash2)
 	}
 }
