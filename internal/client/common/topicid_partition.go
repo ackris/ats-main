@@ -62,7 +62,15 @@ func (tip *TopicIdPartition) Equals(other *TopicIdPartition) bool {
 	if other == nil {
 		return false
 	}
-	return tip.topicId == other.topicId && tip.topicPartition == other.topicPartition
+	// Compare Uuid
+	if tip.topicId != other.topicId {
+		return false
+	}
+	// Compare TopicPartition
+	if tip.topicPartition.Topic() != other.topicPartition.Topic() || tip.topicPartition.Partition() != other.topicPartition.Partition() {
+		return false
+	}
+	return true
 }
 
 // String returns a string representation of the TopicIdPartition.
