@@ -15,6 +15,24 @@ type TopicPartitionReplica struct {
 }
 
 // NewTopicPartitionReplica creates a new TopicPartitionReplica instance.
+//
+// Example:
+//
+//	tpr := NewTopicPartitionReplica("example-topic", 0, 1)
+//
+// Parameters:
+//
+//	topic (string): The name of the topic.
+//	partition (int): The partition number.
+//	brokerID (int): The broker ID.
+//
+// Returns:
+//
+//	*TopicPartitionReplica: A pointer to the created TopicPartitionReplica instance.
+//
+// Panics:
+//
+//	If the topic is an empty string.
 func NewTopicPartitionReplica(topic string, partition, brokerID int) *TopicPartitionReplica {
 	if topic == "" {
 		panic("topic cannot be empty")
@@ -27,21 +45,54 @@ func NewTopicPartitionReplica(topic string, partition, brokerID int) *TopicParti
 }
 
 // Topic returns the topic name.
+//
+// Example:
+//
+//	fmt.Println(tpr.Topic()) // Output: example-topic
+//
+// Returns:
+//
+//	string: The topic name.
 func (tpr *TopicPartitionReplica) Topic() string {
 	return tpr.topic
 }
 
 // Partition returns the partition number.
+//
+// Example:
+//
+//	fmt.Println(tpr.Partition()) // Output: 0
+//
+// Returns:
+//
+//	int: The partition number.
 func (tpr *TopicPartitionReplica) Partition() int {
 	return tpr.partition
 }
 
 // BrokerID returns the broker ID.
+//
+// Example:
+//
+//	fmt.Println(tpr.BrokerID()) // Output: 1
+//
+// Returns:
+//
+//	int: The broker ID.
 func (tpr *TopicPartitionReplica) BrokerID() int {
 	return tpr.brokerID
 }
 
 // Hash returns the hash code for the TopicPartitionReplica.
+//
+// Example:
+//
+//	hash := tpr.Hash()
+//	fmt.Println(hash) // Output: 1234567890
+//
+// Returns:
+//
+//	uint32: The hash code for the TopicPartitionReplica.
 func (tpr *TopicPartitionReplica) Hash() uint32 {
 	if !tpr.isHashSet {
 		h := fnv.New32a()
@@ -55,11 +106,34 @@ func (tpr *TopicPartitionReplica) Hash() uint32 {
 }
 
 // Equals checks if two TopicPartitionReplica instances are equal.
+// Example:
+//
+//	tpr1 := NewTopicPartitionReplica("example-topic", 0, 1)
+//	tpr2 := NewTopicPartitionReplica("example-topic", 0, 1)
+//	if tpr1.Equals(tpr2) {
+//	  fmt.Println("TopicPartitionReplica instances are equal")
+//	}
+//
+// Parameters:
+//
+//	other (*TopicPartitionReplica): The other TopicPartitionReplica instance to compare with.
+//
+// Returns:
+//
+//	bool: True if the TopicPartitionReplica instances are equal, false otherwise.
 func (tpr *TopicPartitionReplica) Equals(other *TopicPartitionReplica) bool {
 	return other != nil && tpr.partition == other.partition && tpr.brokerID == other.brokerID && tpr.topic == other.topic
 }
 
 // String returns a string representation of the TopicPartitionReplica.
+//
+// Example:
+//
+//	fmt.Println(tpr.String()) // Output: example-topic-0-1
+//
+// Returns:
+//
+//	string: The string representation of the TopicPartitionReplica.
 func (tpr *TopicPartitionReplica) String() string {
 	return fmt.Sprintf("%s-%d-%d", tpr.topic, tpr.partition, tpr.brokerID)
 }
