@@ -5,27 +5,6 @@ import (
 	"strings"
 )
 
-// Node represents a node in the cluster.
-// It holds the ID of the node.
-type Node struct {
-	ID string
-}
-
-// IDString returns the string representation of the node's ID.
-// This method is used to get the unique identifier of the node as a string.
-//
-// Returns:
-//
-//	The ID of the node as a string.
-//
-// Example:
-//
-//	node := &Node{ID: "node1"}
-//	fmt.Println(node.IDString()) // Output: node1
-func (n *Node) IDString() string {
-	return n.ID
-}
-
 // PartitionInfo describes the state of a partition within a topic.
 // It includes information about the topic, partition ID, leader node,
 // replicas, in-sync replicas, and offline replicas.
@@ -203,29 +182,4 @@ func SlicesEqual(a, b []*Node) bool {
 		}
 	}
 	return true
-}
-
-// contains checks if a map contains the specified key.
-// This method is used to check if a key is present in a map.
-//
-// Parameters:
-//
-//	m: The map to check for the presence of the key.
-//	key: The key to look for in the map.
-//
-// Returns:
-//
-//	True if the key is in the map, false otherwise.
-//
-// Example:
-//
-//	m := map[string]struct{}{
-//	    "node1": {},
-//	    "node2": {},
-//	}
-//	fmt.Println(contains(m, "node1")) // Output: true
-//	fmt.Println(contains(m, "node3")) // Output: false
-func contains(m map[string]struct{}, key string) bool {
-	_, ok := m[key]
-	return ok
 }
