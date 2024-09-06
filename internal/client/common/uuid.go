@@ -6,21 +6,20 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+
 	"time"
 )
 
 // Constants
 const (
-	// Base64UUIDLength is the length of a base64 encoded UUID without padding.
-	base64UUIDLength = 22
 	// UUIDSize is the size of a UUID in bytes.
 	uuidSize = 16
 )
 
 // Uuid represents a 128-bit UUID.
 type Uuid struct {
-	mostSignificantBits  int64 // Most significant 64 bits of the UUID
-	leastSignificantBits int64 // Least significant 64 bits of the UUID
+	mostSignificantBits  uint64 // Most significant 64 bits of the UUID
+	leastSignificantBits uint64 // Least significant 64 bits of the UUID
 }
 
 // Predefined reserved UUIDs
@@ -52,7 +51,7 @@ var (
 //
 //	u := NewUuid(0x123456789abcdef0, 0xfedcba9876543210)
 //	fmt.Println(u.String()) // Output: Base64 encoded UUID
-func NewUuid(mostSigBits, leastSigBits int64) Uuid {
+func NewUuid(mostSigBits, leastSigBits uint64) Uuid {
 	return Uuid{
 		mostSignificantBits:  mostSigBits,
 		leastSignificantBits: leastSigBits,
@@ -91,8 +90,8 @@ func unsafeRandomUuid(r *rand.Rand) Uuid {
 
 	// Construct UUID from bytes
 	return NewUuid(
-		int64(binary.BigEndian.Uint64(b[:8])),
-		int64(binary.BigEndian.Uint64(b[8:])),
+		binary.BigEndian.Uint64(b[:8]),
+		binary.BigEndian.Uint64(b[8:]),
 	)
 }
 
@@ -143,22 +142,25 @@ func (u Uuid) String() string {
 //	    fmt.Println(u) // Output: {0 1}
 //	}
 func FromString(s string) (Uuid, error) {
-	if len(s) > base64UUIDLength {
-		return Uuid{}, errors.New("input string is too long to be decoded as a base64 UUID")
+	if len(s) == 0 {
+		return Uuid{}, errors.New("input string is empty")
 	}
 
+	// Decode Base64 string
 	b, err := base64.RawURLEncoding.DecodeString(s)
 	if err != nil {
 		return Uuid{}, fmt.Errorf("error decoding base64 string: %w", err)
 	}
 
+	// Validate the length of the decoded byte slice
 	if len(b) != uuidSize {
 		return Uuid{}, errors.New("decoded byte slice is not 16 bytes long")
 	}
 
+	// Create UUID from bytes
 	return Uuid{
-		mostSignificantBits:  int64(binary.BigEndian.Uint64(b[:8])),
-		leastSignificantBits: int64(binary.BigEndian.Uint64(b[8:])),
+		mostSignificantBits:  binary.BigEndian.Uint64(b[:8]),
+		leastSignificantBits: binary.BigEndian.Uint64(b[8:]),
 	}, nil
 }
 
@@ -196,18 +198,19 @@ func (u Uuid) getBytes() []byte {
 //	result := u1.Compare(u2)
 //	fmt.Println(result) // Output: -1 (u1 is less than u2)
 func (u Uuid) Compare(other Uuid) int {
-	switch {
-	case u.mostSignificantBits > other.mostSignificantBits:
+	if u.mostSignificantBits > other.mostSignificantBits {
 		return 1
-	case u.mostSignificantBits < other.mostSignificantBits:
-		return -1
-	case u.leastSignificantBits > other.leastSignificantBits:
-		return 1
-	case u.leastSignificantBits < other.leastSignificantBits:
-		return -1
-	default:
-		return 0
 	}
+	if u.mostSignificantBits < other.mostSignificantBits {
+		return -1
+	}
+	if u.leastSignificantBits > other.leastSignificantBits {
+		return 1
+	}
+	if u.leastSignificantBits < other.leastSignificantBits {
+		return -1
+	}
+	return 0
 }
 
 // ToArray converts a slice of Uuid to an array of [2]int64.
@@ -223,10 +226,10 @@ func (u Uuid) Compare(other Uuid) int {
 //	uuids := []Uuid{NewUuid(0, 1), NewUuid(0, 2)}
 //	arr := ToArray(uuids)
 //	fmt.Println(arr) // Output: [[0 1] [0 2]]
-func ToArray(slice []Uuid) [][2]int64 {
-	arr := make([][2]int64, len(slice))
+func ToArray(slice []Uuid) [][2]uint64 {
+	arr := make([][2]uint64, len(slice))
 	for i, u := range slice {
-		arr[i] = [2]int64{u.mostSignificantBits, u.leastSignificantBits}
+		arr[i] = [2]uint64{u.mostSignificantBits, u.leastSignificantBits}
 	}
 	return arr
 }
@@ -244,7 +247,7 @@ func ToArray(slice []Uuid) [][2]int64 {
 //	arr := [][2]int64{{0, 1}, {0, 2}}
 //	uuids := ToList(arr)
 //	fmt.Println(uuids[0].String()) // Output: Base64 encoded UUID of {0 1}
-func ToList(arr [][2]int64) []Uuid {
+func ToList(arr [][2]uint64) []Uuid {
 	slice := make([]Uuid, len(arr))
 	for i, v := range arr {
 		slice[i] = NewUuid(v[0], v[1])
