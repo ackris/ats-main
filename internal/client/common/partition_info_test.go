@@ -179,6 +179,21 @@ func TestSlicesEqual(t *testing.T) {
 			b:        []*Node{node1, node2},
 			expected: false,
 		},
+		{
+			a:        []*Node{node1},
+			b:        []*Node{node1},
+			expected: true,
+		},
+		{
+			a:        []*Node{node1},
+			b:        nil,
+			expected: false,
+		},
+		{
+			a:        nil,
+			b:        nil,
+			expected: true,
+		},
 	}
 
 	for _, tt := range tests {

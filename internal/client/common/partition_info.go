@@ -197,14 +197,8 @@ func SlicesEqual(a, b []*Node) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	aMap := make(map[string]struct{}, len(a))
-	for _, node := range a {
-		if node != nil {
-			aMap[node.IDString()] = struct{}{}
-		}
-	}
-	for _, node := range b {
-		if node == nil || !contains(aMap, node.IDString()) {
+	for i := range a {
+		if a[i] != b[i] {
 			return false
 		}
 	}
