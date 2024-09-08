@@ -27,7 +27,7 @@ import (
 type PartitionStates[S any] struct {
 	mu       sync.RWMutex
 	mapState map[*common.TopicPartition]S
-	size     int
+	order    []*common.TopicPartition
 }
 
 // NewPartitionStates creates a new PartitionStates instance with an empty state map.
@@ -43,6 +43,7 @@ type PartitionStates[S any] struct {
 func NewPartitionStates[S any]() *PartitionStates[S] {
 	return &PartitionStates[S]{
 		mapState: make(map[*common.TopicPartition]S),
+		order:    []*common.TopicPartition{},
 	}
 }
 
@@ -66,7 +67,15 @@ func (ps *PartitionStates[S]) MoveToEnd(tp *common.TopicPartition) {
 	defer ps.mu.Unlock()
 
 	if state, ok := ps.mapState[tp]; ok {
-		delete(ps.mapState, tp)
+		// Remove the partition from its current position
+		for i, partition := range ps.order {
+			if partition.Equals(tp) {
+				ps.order = append(ps.order[:i], ps.order[i+1:]...)
+				break
+			}
+		}
+		// Add the partition to the end
+		ps.order = append(ps.order, tp)
 		ps.mapState[tp] = state
 	}
 }
@@ -88,9 +97,11 @@ func (ps *PartitionStates[S]) UpdateAndMoveToEnd(tp *common.TopicPartition, stat
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 
+	// Remove the partition if it exists to ensure it will be re-added to the end
 	delete(ps.mapState, tp)
+
+	// Add or update the partition with the new state
 	ps.mapState[tp] = state
-	ps.updateSize()
 }
 
 // Update updates the state of a partition.
@@ -110,8 +121,11 @@ func (ps *PartitionStates[S]) Update(tp *common.TopicPartition, state S) {
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 
+	if _, exists := ps.mapState[tp]; !exists {
+		// New partition, add it to the end
+		ps.order = append(ps.order, tp)
+	}
 	ps.mapState[tp] = state
-	ps.updateSize()
 }
 
 // Remove removes the specified partition from the state.
@@ -131,7 +145,12 @@ func (ps *PartitionStates[S]) Remove(tp *common.TopicPartition) {
 	defer ps.mu.Unlock()
 
 	delete(ps.mapState, tp)
-	ps.updateSize()
+	for i, partition := range ps.order {
+		if partition.Equals(tp) {
+			ps.order = append(ps.order[:i], ps.order[i+1:]...)
+			break
+		}
+	}
 }
 
 // PartitionSet returns a set of all partitions currently in the state.
@@ -172,7 +191,7 @@ func (ps *PartitionStates[S]) Clear() {
 	defer ps.mu.Unlock()
 
 	ps.mapState = make(map[*common.TopicPartition]S)
-	ps.size = 0
+	ps.order = []*common.TopicPartition{}
 }
 
 // Contains checks if a partition exists in the state.
@@ -222,8 +241,8 @@ func (ps *PartitionStates[S]) StateIterator() <-chan S {
 	ch := make(chan S)
 	go func() {
 		defer close(ch)
-		for _, state := range ps.mapState {
-			ch <- state
+		for _, tp := range ps.order {
+			ch <- ps.mapState[tp]
 		}
 	}()
 	return ch
@@ -246,8 +265,8 @@ func (ps *PartitionStates[S]) ForEach(f func(*common.TopicPartition, S)) {
 	ps.mu.RLock()
 	defer ps.mu.RUnlock()
 
-	for tp, state := range ps.mapState {
-		f(tp, state)
+	for _, tp := range ps.order {
+		f(tp, ps.mapState[tp])
 	}
 }
 
@@ -295,8 +314,8 @@ func (ps *PartitionStates[S]) PartitionStateValues() []S {
 	defer ps.mu.RUnlock()
 
 	values := make([]S, 0, len(ps.mapState))
-	for _, state := range ps.mapState {
-		values = append(values, state)
+	for _, tp := range ps.order {
+		values = append(values, ps.mapState[tp])
 	}
 	return values
 }
@@ -342,7 +361,7 @@ func (ps *PartitionStates[S]) Size() int {
 	ps.mu.RLock()
 	defer ps.mu.RUnlock()
 
-	return ps.size
+	return len(ps.order)
 }
 
 // Set updates the state with the provided map of partitions to states.
@@ -366,15 +385,11 @@ func (ps *PartitionStates[S]) Set(partitionToState map[*common.TopicPartition]S)
 	defer ps.mu.Unlock()
 
 	ps.mapState = make(map[*common.TopicPartition]S, len(partitionToState))
+	ps.order = make([]*common.TopicPartition, 0, len(partitionToState))
 	for tp, state := range partitionToState {
 		ps.mapState[tp] = state
+		ps.order = append(ps.order, tp)
 	}
-	ps.updateSize()
-}
-
-// updateSize updates the size of the PartitionStates instance based on the current map state.
-func (ps *PartitionStates[S]) updateSize() {
-	ps.size = len(ps.mapState)
 }
 
 // PartitionState represents a state for a topic partition.

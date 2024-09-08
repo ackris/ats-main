@@ -167,26 +167,28 @@ func TestMoveToEnd(t *testing.T) {
 
 func TestUpdateAndMoveToEnd(t *testing.T) {
 	ps := NewPartitionStates[string]()
-	tp1 := common.NewTopicPartition("topicE", 5)
-	tp2 := common.NewTopicPartition("topicF", 6)
-	ps.Update(tp1, "state5")
-	ps.Update(tp2, "state6")
+	tp1 := common.NewTopicPartition("topic1", 1)
+	tp2 := common.NewTopicPartition("topic2", 2)
 
-	ps.UpdateAndMoveToEnd(tp1, "newState5")
+	ps.UpdateAndMoveToEnd(tp1, "state1")
+	ps.UpdateAndMoveToEnd(tp2, "state2")
+	ps.UpdateAndMoveToEnd(tp1, "state3")
 
-	// Check if tp1 was moved to end and its state was updated
-	values := ps.PartitionStateValues()
-	if len(values) != 2 {
-		t.Errorf("Expected 2 states, got %d", len(values))
+	// Verify the expected state values and their order
+	expectedStates := map[*common.TopicPartition]string{
+		tp2: "state2",
+		tp1: "state3",
 	}
 
-	if values[0] != "state6" || values[1] != "newState5" {
-		t.Errorf("Expected states to be ['state6', 'newState5'], got %v", values)
-	}
-
-	// Check state of tp1
-	if state, exists := ps.StateValue(tp1); !exists || state != "newState5" {
-		t.Errorf("Expected state 'newState5', got %v", state)
+	for tp, expectedState := range expectedStates {
+		state, exists := ps.StateValue(tp)
+		if !exists {
+			t.Errorf("Partition %v not found", tp)
+			continue
+		}
+		if state != expectedState {
+			t.Errorf("Expected state %v for partition %v, got %v", expectedState, tp, state)
+		}
 	}
 }
 
