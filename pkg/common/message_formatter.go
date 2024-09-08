@@ -14,10 +14,6 @@
 
 package common
 
-import (
-	"io"
-)
-
 // MessageFormatter defines an interface for formatting and displaying records read by a consumer instance.
 // Atomstate provides a few implementations to display records of internal topics such as __consumer_offsets,
 // __transaction_state and the MirrorMaker2 topics.
@@ -26,7 +22,7 @@ type MessageFormatter interface {
 	Configure(configs map[string]interface{})
 
 	// WriteTo formats the provided ConsumerRecord for display and writes it to the output.
-	WriteTo(record *ConsumerRecord, output io.Writer)
+	// WriteTo(record *ConsumerRecord, output io.Writer)
 
 	// Close cleans up any resources used by the formatter.
 	Close() error
