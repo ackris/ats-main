@@ -19,6 +19,8 @@ import (
 )
 
 // MessageFormatter defines an interface for formatting and displaying records read by a consumer instance.
+// Atomstate provides a few implementations to display records of internal topics such as __consumer_offsets,
+// __transaction_state and the MirrorMaker2 topics.
 type MessageFormatter interface {
 	// Configure sets up the MessageFormatter with the provided configuration.
 	Configure(configs map[string]interface{})
