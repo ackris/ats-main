@@ -54,6 +54,26 @@ type Cluster struct {
 //
 // Returns:
 //   - A new instance of Cluster.
+//
+// Example:
+//
+// cluster := NewCluster(
+//
+//	"cluster-id",
+//	true,
+//	[]*Node{
+//		{ID: 1, Host: "localhost:9092"},
+//	},
+//	map[*TopicPartition]*PartitionInfo{
+//		&TopicPartition{topic: "my-topic", partition: 0}: &PartitionInfo{Topic: "my-topic", Partition: 0},
+//	},
+//	map[string]struct{}{"unauthorized-topic": {}},
+//	map[string]struct{}{"invalid-topic": {}},
+//	map[string]struct{}{"internal-topic": {}},
+//	&Node{ID: 1, Host: "localhost:9092"},
+//	map[string]Uuid{"my-topic": "uuid-1"},
+//
+// )
 func NewCluster(
 	clusterID string,
 	isBootstrapConfigured bool,
@@ -149,14 +169,14 @@ func copyMap(original map[string]Uuid) map[string]Uuid {
 //   - An empty Cluster instance.
 func EmptyCluster() *Cluster {
 	return &Cluster{
-		nodes:                      nil,
+		nodes:                      []*Node{}, // Initialize as an empty slice instead of nil
 		unauthorizedTopics:         make(map[string]struct{}),
 		invalidTopics:              make(map[string]struct{}),
 		internalTopics:             make(map[string]struct{}),
 		partitionsByTopicPartition: make(map[*TopicPartition]*PartitionInfo),
 		partitionsByTopic:          make(map[string][]*PartitionInfo),
 		availablePartitionsByTopic: make(map[string][]*PartitionInfo),
-		partitionsByNode:           make(map[int][]*PartitionInfo, 0), // Initialize with empty slices
+		partitionsByNode:           make(map[int][]*PartitionInfo), // No need for initial capacity here
 		nodesById:                  make(map[int]*Node),
 		clusterResource:            &ClusterResource{clusterID: ""},
 		topicIds:                   make(map[string]Uuid),
@@ -473,9 +493,9 @@ func (cl *Cluster) AddPartition(partition *PartitionInfo) error {
 	cl.mu.Lock()
 	defer cl.mu.Unlock()
 
-	tp := &TopicPartition{topic: partition.Topic, partition: partition.Partition}
-	if _, exists := cl.partitionsByTopicPartition[tp]; exists {
-		return errors.New("partition already exists") // Return an error if the partition exists
+	tp := NewTopicPartition(partition.Topic, partition.Partition)
+	if existingPartition, exists := cl.partitionsByTopicPartition[tp]; exists && existingPartition.Equals(partition) {
+		return errors.New("partition already exists") // Correctly handle duplicate partitions
 	}
 
 	cl.partitionsByTopicPartition[tp] = partition
@@ -485,7 +505,6 @@ func (cl *Cluster) AddPartition(partition *PartitionInfo) error {
 		cl.partitionsByNode[partition.Leader.ID] = append(cl.partitionsByNode[partition.Leader.ID], partition)
 	}
 
-	// Update available partitions
 	cl.updateAvailablePartitions()
 	return nil
 }

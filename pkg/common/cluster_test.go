@@ -18,6 +18,7 @@ import (
 	"testing"
 )
 
+// TestNewCluster verifies that the cluster is created correctly.
 func TestNewCluster(t *testing.T) {
 	cluster := NewCluster("test-cluster", false, nil, nil, nil, nil, nil, nil, nil)
 
@@ -29,6 +30,7 @@ func TestNewCluster(t *testing.T) {
 	}
 }
 
+// TestAddNode verifies that nodes are added correctly.
 func TestAddNode(t *testing.T) {
 	cluster := EmptyCluster()
 	node := &Node{ID: 1, Host: "localhost:9092"}
@@ -49,6 +51,7 @@ func TestAddNode(t *testing.T) {
 	}
 }
 
+// TestAddPartition verifies that partitions are added correctly.
 func TestAddPartition(t *testing.T) {
 	cluster := EmptyCluster()
 	node := &Node{ID: 1, Host: "localhost:9092"}
@@ -76,6 +79,7 @@ func TestAddPartition(t *testing.T) {
 	}
 }
 
+// TestRemoveNode verifies that nodes are removed correctly.
 func TestRemoveNode(t *testing.T) {
 	cluster := EmptyCluster()
 	node := &Node{ID: 1, Host: "localhost:9092"}
@@ -100,6 +104,7 @@ func TestRemoveNode(t *testing.T) {
 	}
 }
 
+// TestRemovePartition verifies that partitions are removed correctly.
 func TestRemovePartition(t *testing.T) {
 	cluster := EmptyCluster()
 	node := &Node{ID: 1, Host: "localhost:9092"}
@@ -120,6 +125,7 @@ func TestRemovePartition(t *testing.T) {
 	}
 }
 
+// TestLeaderForPartition verifies that the correct leader is returned for a partition.
 func TestLeaderForPartition(t *testing.T) {
 	cluster := EmptyCluster()
 	node := &Node{ID: 1, Host: "localhost:9092"}
@@ -133,12 +139,13 @@ func TestLeaderForPartition(t *testing.T) {
 	}
 	cluster.AddPartition(partition)
 
-	leader := cluster.LeaderFor(&TopicPartition{topic: "test-topic", partition: 0})
+	leader := cluster.LeaderFor(NewTopicPartition("test-topic", 0))
 	if leader == nil || leader.ID != node.ID {
 		t.Fatalf("Expected leader to be node with ID %d, got %v", node.ID, leader)
 	}
 }
 
+// TestNodeIfOnline verifies that the correct node is returned if it is online.
 func TestNodeIfOnline(t *testing.T) {
 	cluster := EmptyCluster()
 	node := &Node{ID: 1, Host: "localhost:9092"}
@@ -152,18 +159,19 @@ func TestNodeIfOnline(t *testing.T) {
 	}
 	cluster.AddPartition(partition)
 
-	onlineNode := cluster.NodeIfOnline(&TopicPartition{topic: "test-topic", partition: 0}, node.ID)
+	onlineNode := cluster.NodeIfOnline(NewTopicPartition("test-topic", 0), node.ID)
 	if onlineNode == nil || onlineNode.ID != node.ID {
 		t.Fatalf("Expected online node to be node with ID %d, got %v", node.ID, onlineNode)
 	}
 
 	// Test with an offline node
-	offlineNode := cluster.NodeIfOnline(&TopicPartition{topic: "test-topic", partition: 0}, 2)
+	offlineNode := cluster.NodeIfOnline(NewTopicPartition("test-topic", 0), 2)
 	if offlineNode != nil {
 		t.Fatalf("Expected no node for ID 2, got %v", offlineNode)
 	}
 }
 
+// TestAvailablePartitionsForTopic verifies the available partitions for a topic.
 func TestAvailablePartitionsForTopic(t *testing.T) {
 	cluster := EmptyCluster()
 	node := &Node{ID: 1, Host: "localhost:9092"}
