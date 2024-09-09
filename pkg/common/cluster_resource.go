@@ -16,7 +16,7 @@ package common
 
 import "fmt"
 
-// ClusterResource encapsulates metadata for a Atomstate cluster.
+// ClusterResource encapsulates metadata for an Atomstate cluster.
 type ClusterResource struct {
 	clusterID string
 }

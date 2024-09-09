@@ -25,6 +25,9 @@ type AtomStateError struct {
 // Error implements the error interface for AtomStateError.
 // It formats the error message including the cause if present.
 func (e AtomStateError) Error() string {
+	if e.Message == "" {
+		return e.Cause.Error()
+	}
 	if e.Cause != nil {
 		return e.Message + ": " + e.Cause.Error()
 	}

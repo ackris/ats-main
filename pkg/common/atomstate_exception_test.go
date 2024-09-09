@@ -103,6 +103,6 @@ func TestLog(t *testing.T) {
 
 	// Check if the log contains the expected message and fields
 	logOutput := buf.String()
-	assert.Contains(t, logOutput, `"msg":"test log message"`)
-	assert.Contains(t, logOutput, `"err":"log cause"`)
+	assert.Contains(t, logOutput, `"M":"test log message"`)
+	assert.Contains(t, logOutput, `"error":"log cause"`)
 }
