@@ -16,6 +16,9 @@ package common
 
 import (
 	"errors"
+	"fmt"
+	"hash/fnv"
+	"reflect"
 	"sort"
 	"sync"
 )
@@ -611,4 +614,121 @@ func (cl *Cluster) RemovePartition(topic string, partition int) {
 
 	// Update available partitions after partition removal
 	cl.updateAvailablePartitions()
+}
+
+// String returns a formatted string representation of the Cluster instance.
+// It includes the cluster ID, unauthorized topics, invalid topics,
+// bootstrap configuration status, and the list of nodes.
+//
+// Example:
+//
+//	cluster := &Cluster{
+//		clusterResource: &ClusterResource{clusterID: "test-cluster"},
+//		unauthorizedTopics: map[string]struct{}{"topic1": {}},
+//		invalidTopics: map[string]struct{}{"topic2": {}},
+//		isBootstrapConfigured: true,
+//		nodes: []*Node{{ID: 1, Host: "localhost:9092"}},
+//	}
+//	fmt.Println(cluster.String())
+//
+// Output: Cluster{id='test-cluster', unauthorizedTopics=map[topic1:{}], invalidTopics=map[topic2:{}], isBootstrapConfigured=true, nodes=[{ID:1 Host:localhost:9092}]}
+func (cl *Cluster) String() string {
+	return fmt.Sprintf("Cluster{id='%s', unauthorizedTopics=%v, invalidTopics=%v, isBootstrapConfigured=%v, nodes=%v}",
+		cl.clusterResource.clusterID,
+		cl.unauthorizedTopics,
+		cl.invalidTopics,
+		cl.isBootstrapConfigured,
+		cl.nodes)
+}
+
+// Equals compares the current Cluster instance with another Cluster instance.
+// Two Cluster instances are considered equal if they have the same cluster ID,
+// bootstrap configuration status, unauthorized topics, invalid topics, and nodes.
+//
+// Parameters:
+//
+//	other (*Cluster): The other Cluster instance to compare with.
+//
+// Returns:
+//
+//	bool: true if both Cluster instances are equal, false otherwise.
+//
+// Example:
+//
+//	cluster1 := &Cluster{
+//		clusterResource: &ClusterResource{clusterID: "test-cluster"},
+//		unauthorizedTopics: map[string]struct{}{"topic1": {}},
+//		invalidTopics: map[string]struct{}{"topic2": {}},
+//		isBootstrapConfigured: true,
+//		nodes: []*Node{{ID: 1, Host: "localhost:9092"}},
+//	}
+//
+//	cluster2 := &Cluster{
+//		clusterResource: &ClusterResource{clusterID: "test-cluster"},
+//		unauthorizedTopics: map[string]struct{}{"topic1": {}},
+//		invalidTopics: map[string]struct{}{"topic2": {}},
+//		isBootstrapConfigured: true,
+//		nodes: []*Node{{ID: 1, Host: "localhost:9092"}},
+//	}
+//
+//	fmt.Println(cluster1.Equals(cluster2)) // Output: true
+func (cl *Cluster) Equals(other *Cluster) bool {
+	if other == nil {
+		return false
+	}
+
+	// Compare fields for equality
+	return cl.clusterResource.clusterID == other.clusterResource.clusterID &&
+		cl.isBootstrapConfigured == other.isBootstrapConfigured &&
+		reflect.DeepEqual(cl.unauthorizedTopics, other.unauthorizedTopics) &&
+		reflect.DeepEqual(cl.invalidTopics, other.invalidTopics) &&
+		reflect.DeepEqual(cl.nodes, other.nodes)
+}
+
+// HashCode generates a hash code for the Cluster instance based on its
+// cluster ID and bootstrap configuration status. This hash code can be used
+// for hashing and lookup in hash-based data structures.
+//
+// Returns:
+//
+//	uint64: The hash code for the Cluster instance.
+//
+// Example:
+//
+//	cluster := &Cluster{
+//		clusterResource: &ClusterResource{clusterID: "test-cluster"},
+//		isBootstrapConfigured: true,
+//	}
+//
+//	hashCode := cluster.HashCode()
+//	fmt.Println(hashCode) // Output: A hash code as uint64
+func (cl *Cluster) HashCode() uint64 {
+	h := fnv.New64a()
+	h.Write([]byte(cl.clusterResource.clusterID))
+
+	if cl.isBootstrapConfigured {
+		h.Write([]byte("true"))
+	} else {
+		h.Write([]byte("false"))
+	}
+
+	// Consider including other fields in the hash if necessary
+	return h.Sum64()
+}
+
+// IsBootstrapConfigured returns whether the bootstrap configuration is enabled for the cluster.
+//
+// Returns:
+//
+//	bool: true if bootstrap is configured, false otherwise.
+//
+// Example:
+//
+//	cluster := &Cluster{
+//		isBootstrapConfigured: true,
+//	}
+//
+//	fmt.Println(cluster.IsBootstrapConfigured()) // Output: true
+func (cl *Cluster) IsBootstrapConfigured() bool {
+	return cl.isBootstrapConfigured
 }
