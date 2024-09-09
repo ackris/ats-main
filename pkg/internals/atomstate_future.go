@@ -21,44 +21,94 @@ import (
 )
 
 // AtomstateFuture represents the interface for a future with various async methods.
+// It allows you to handle asynchronous operations and their results or errors.
 type AtomstateFuture[T any] interface {
+	// Complete completes the future with the provided value.
 	Complete(value T) error
+
+	// CompleteExceptionally completes the future with an error.
 	CompleteExceptionally(err error) error
+
+	// Get retrieves the value of the future, blocking until it is completed.
 	Get() (T, error)
+
+	// GetNow retrieves the value of the future if it's completed, otherwise returns the default value.
 	GetNow(defaultValue T) T
+
+	// Accept runs the provided action with the value of this future.
 	Accept(action func(T))
-	ToCompletionStage() *AtomstateFutureImpl[T]
+
+	// ToCompletionStage returns the AtomstateFutureImplementation itself.
+	ToCompletionStage() *AtomstateFutureImplementation[T]
+
+	// ToString returns a string representation of the future's state.
 	ToString() string
-	ThenApply(function func(T) T) *AtomstateFutureImpl[T]
-	ThenApplyAsync(function func(T) T) *AtomstateFutureImpl[T]
+
+	// ThenApply returns a new AtomstateFuture that applies the provided function to the result of this future.
+	ThenApply(function func(T) T) *AtomstateFutureImplementation[T]
+
+	// ThenApplyAsync returns a new AtomstateFuture that applies the provided function asynchronously.
+	ThenApplyAsync(function func(T) T) *AtomstateFutureImplementation[T]
+
+	// WhenComplete runs the provided action when this future completes.
 	WhenComplete(action func(T, error))
+
+	// WhenCompleteAsync runs the provided action asynchronously.
 	WhenCompleteAsync(action func(T, error))
-	Handle(biFunction func(T, error) T) *AtomstateFutureImpl[T]
-	HandleAsync(biFunction func(T, error) T) *AtomstateFutureImpl[T]
-	Exceptionally(function func(error) T) *AtomstateFutureImpl[T]
-	AllOf(futures ...*AtomstateFutureImpl[T]) *AtomstateFutureImpl[struct{}]
-	AnyOf(futures ...*AtomstateFutureImpl[T]) *AtomstateFutureImpl[T]
+
+	// Handle returns a new AtomstateFuture that handles both the result and error.
+	Handle(biFunction func(T, error) T) *AtomstateFutureImplementation[T]
+
+	// HandleAsync returns a new AtomstateFuture that handles both the result and error asynchronously.
+	HandleAsync(biFunction func(T, error) T) *AtomstateFutureImplementation[T]
+
+	// Exceptionally returns a new AtomstateFuture that handles errors using the provided function.
+	Exceptionally(function func(error) T) *AtomstateFutureImplementation[T]
+
+	// AllOf returns a new AtomstateFuture that is completed when all of the given futures are completed.
+	AllOf(futures ...*AtomstateFutureImplementation[interface{}]) *AtomstateFutureImplementation[struct{}]
+
+	// AnyOf returns a new AtomstateFuture that is completed when any of the given futures are completed.
+	AnyOf(futures ...*AtomstateFutureImplementation[T]) *AtomstateFutureImplementation[T]
+
+	// Cancel cancels the future if possible.
 	Cancel() bool
+
+	// IsCancelled checks if the future is cancelled.
 	IsCancelled() bool
+
+	// IsDone checks if the future is completed.
 	IsDone() bool
 }
 
-// AtomstateFutureImpl implements AtomstateFuture interface.
-type AtomstateFutureImpl[T any] struct {
+// AtomstateFutureImplementation implements AtomstateFuture interface.
+// It provides methods to manage and retrieve results from an asynchronous operation.
+type AtomstateFutureImplementation[T any] struct {
 	completableFuture *AtomstateCompletableFuture[T]
 	cancelled         bool
 	mu                sync.RWMutex
 }
 
-// NewAtomstateFuture creates a new AtomstateFutureImpl instance.
-func NewAtomstateFuture[T any]() *AtomstateFutureImpl[T] {
-	return &AtomstateFutureImpl[T]{
+// NewAtomstateFuture creates a new AtomstateFutureImplementation instance.
+//
+// Example:
+//
+// future := NewAtomstateFuture[int]()
+func NewAtomstateFuture[T any]() *AtomstateFutureImplementation[T] {
+	return &AtomstateFutureImplementation[T]{
 		completableFuture: NewAtomstateCompletableFuture[T](),
 	}
 }
 
 // Complete completes the future with the provided value.
-func (f *AtomstateFutureImpl[T]) Complete(value T) error {
+// Returns an error if the future was already cancelled.
+// Example usage:
+// err := future.Complete(42)
+//
+//	if err != nil {
+//	    fmt.Println("Error completing future:", err)
+//	}
+func (f *AtomstateFutureImplementation[T]) Complete(value T) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.cancelled {
@@ -68,7 +118,14 @@ func (f *AtomstateFutureImpl[T]) Complete(value T) error {
 }
 
 // CompleteExceptionally completes the future with an error.
-func (f *AtomstateFutureImpl[T]) CompleteExceptionally(err error) error {
+// Returns an error if the future was already cancelled.
+// Example usage:
+// err := future.CompleteExceptionally(errors.New("something went wrong"))
+//
+//	if err != nil {
+//	    fmt.Println("Error completing future exceptionally:", err)
+//	}
+func (f *AtomstateFutureImplementation[T]) CompleteExceptionally(err error) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.cancelled {
@@ -78,7 +135,17 @@ func (f *AtomstateFutureImpl[T]) CompleteExceptionally(err error) error {
 }
 
 // Get retrieves the value of the future, blocking until it is completed.
-func (f *AtomstateFutureImpl[T]) Get() (T, error) {
+// Returns the value and any error that occurred during completion.
+// Example usage:
+// value, err := future.Get()
+//
+//	if err != nil {
+//	    fmt.Println("Error getting future value:", err)
+//	} else {
+//
+//	    fmt.Println("Future value:", value)
+//	}
+func (f *AtomstateFutureImplementation[T]) Get() (T, error) {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	if f.cancelled {
@@ -87,8 +154,15 @@ func (f *AtomstateFutureImpl[T]) Get() (T, error) {
 	return f.completableFuture.Get()
 }
 
-// GetNow retrieves the value of the future if it's completed, otherwise returns the default value.
-func (f *AtomstateFutureImpl[T]) GetNow(defaultValue T) T {
+// GetNow retrieves the value of the future if it's completed,
+// otherwise returns the default value provided.
+//
+// Example usage:
+//
+// value := future.GetNow(0)
+//
+// fmt.Println("Future value or default:", value)
+func (f *AtomstateFutureImplementation[T]) GetNow(defaultValue T) T {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	if f.cancelled {
@@ -108,8 +182,14 @@ func (f *AtomstateFutureImpl[T]) GetNow(defaultValue T) T {
 	return value
 }
 
-// Accept runs the provided action with the value of this future.
-func (f *AtomstateFutureImpl[T]) Accept(action func(T)) {
+// Accept runs the provided action with the value of this future once it is completed.
+// The action is executed in a new goroutine.
+// Example usage:
+//
+//	future.Accept(func(value int) {
+//	    fmt.Println("Accepted value:", value)
+//	})
+func (f *AtomstateFutureImplementation[T]) Accept(action func(T)) {
 	go func() {
 		value, err := f.completableFuture.Get()
 		if err == nil {
@@ -118,13 +198,22 @@ func (f *AtomstateFutureImpl[T]) Accept(action func(T)) {
 	}()
 }
 
-// ToCompletionStage returns the AtomstateFutureImpl itself.
-func (f *AtomstateFutureImpl[T]) ToCompletionStage() *AtomstateFutureImpl[T] {
+// ToCompletionStage returns the AtomstateFutureImplementation itself.
+// This allows method chaining with the future instance.
+// Example usage:
+// stage := future.ToCompletionStage()
+// fmt.Println(stage)
+func (f *AtomstateFutureImplementation[T]) ToCompletionStage() *AtomstateFutureImplementation[T] {
 	return f
 }
 
 // ToString returns a string representation of the future's state.
-func (f *AtomstateFutureImpl[T]) ToString() string {
+// Example usage:
+//
+// fmt.Println(future.ToString())
+//
+// Outputs "Incomplete", "Completed[42]", or "Cancelled"
+func (f *AtomstateFutureImplementation[T]) ToString() string {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	if f.cancelled {
@@ -141,7 +230,16 @@ func (f *AtomstateFutureImpl[T]) ToString() string {
 }
 
 // ThenApply returns a new AtomstateFuture that applies the provided function to the result of this future.
-func (f *AtomstateFutureImpl[T]) ThenApply(function func(T) T) *AtomstateFutureImpl[T] {
+// The function is applied in a new goroutine.
+// Example usage:
+//
+//	newFuture := future.ThenApply(func(v int) int {
+//	    return v * 2
+//	})
+//
+// value, err := newFuture.Get()
+// fmt.Println("Transformed Value:", value)
+func (f *AtomstateFutureImplementation[T]) ThenApply(function func(T) T) *AtomstateFutureImplementation[T] {
 	result := NewAtomstateFuture[T]()
 	go func() {
 		// Wait for the future to complete and then apply the function.
@@ -156,7 +254,16 @@ func (f *AtomstateFutureImpl[T]) ThenApply(function func(T) T) *AtomstateFutureI
 }
 
 // ThenApplyAsync returns a new AtomstateFuture that applies the provided function asynchronously.
-func (f *AtomstateFutureImpl[T]) ThenApplyAsync(function func(T) T) *AtomstateFutureImpl[T] {
+// The function is applied in a new goroutine.
+// Example usage:
+//
+//	newFuture := future.ThenApplyAsync(func(v int) int {
+//	    return v + 10
+//	})
+//
+// value, err := newFuture.Get()
+// fmt.Println("Asynchronously Transformed Value:", value)
+func (f *AtomstateFutureImplementation[T]) ThenApplyAsync(function func(T) T) *AtomstateFutureImplementation[T] {
 	result := NewAtomstateFuture[T]()
 	go func() {
 		value, err := f.Get() // Get the value from the future
@@ -171,7 +278,17 @@ func (f *AtomstateFutureImpl[T]) ThenApplyAsync(function func(T) T) *AtomstateFu
 }
 
 // WhenComplete runs the provided action when this future completes.
-func (f *AtomstateFutureImpl[T]) WhenComplete(action func(T, error)) {
+// The action is executed in a new goroutine and receives the result and error.
+// Example usage:
+//
+//	future.WhenComplete(func(value int, err error) {
+//	    if err != nil {
+//	        fmt.Println("Completed with error:", err)
+//	    } else {
+//	        fmt.Println("Completed with value:", value)
+//	    }
+//	})
+func (f *AtomstateFutureImplementation[T]) WhenComplete(action func(T, error)) {
 	go func() {
 		value, err := f.completableFuture.Get()
 		action(value, err)
@@ -179,12 +296,34 @@ func (f *AtomstateFutureImpl[T]) WhenComplete(action func(T, error)) {
 }
 
 // WhenCompleteAsync runs the provided action asynchronously.
-func (f *AtomstateFutureImpl[T]) WhenCompleteAsync(action func(T, error)) {
+// It’s similar to WhenComplete but explicitly uses a new goroutine.
+// Example usage:
+//
+//	future.WhenCompleteAsync(func(value int, err error) {
+//	    if err != nil {
+//	        fmt.Println("Asynchronously completed with error:", err)
+//	    } else {
+//	        fmt.Println("Asynchronously completed with value:", value)
+//	    }
+//	})
+func (f *AtomstateFutureImplementation[T]) WhenCompleteAsync(action func(T, error)) {
 	f.WhenComplete(action)
 }
 
 // Handle returns a new AtomstateFuture that handles both the result and error.
-func (f *AtomstateFutureImpl[T]) Handle(biFunction func(T, error) T) *AtomstateFutureImpl[T] {
+// The provided function is applied to the result and error and is completed with the result.
+// Example usage:
+//
+//	handledFuture := future.Handle(func(value int, err error) int {
+//	    if err != nil {
+//	        return 0
+//	    }
+//	    return value * 2
+//	})
+//
+// value, err := handledFuture.Get()
+// fmt.Println("Handled Value:", value)
+func (f *AtomstateFutureImplementation[T]) Handle(biFunction func(T, error) T) *AtomstateFutureImplementation[T] {
 	result := NewAtomstateFuture[T]()
 	go func() {
 		value, err := f.completableFuture.Get()
@@ -194,12 +333,33 @@ func (f *AtomstateFutureImpl[T]) Handle(biFunction func(T, error) T) *AtomstateF
 }
 
 // HandleAsync returns a new AtomstateFuture that handles both the result and error asynchronously.
-func (f *AtomstateFutureImpl[T]) HandleAsync(biFunction func(T, error) T) *AtomstateFutureImpl[T] {
+// It’s similar to Handle but explicitly uses a new goroutine.
+// Example usage:
+//
+//	handledFuture := future.HandleAsync(func(value int, err error) int {
+//	    if err != nil {
+//	        return -1
+//	    }
+//	    return value + 1
+//	})
+//
+// value, err := handledFuture.Get()
+// fmt.Println("Asynchronously Handled Value:", value)
+func (f *AtomstateFutureImplementation[T]) HandleAsync(biFunction func(T, error) T) *AtomstateFutureImplementation[T] {
 	return f.Handle(biFunction)
 }
 
 // Exceptionally returns a new AtomstateFuture that handles errors using the provided function.
-func (f *AtomstateFutureImpl[T]) Exceptionally(function func(error) T) *AtomstateFutureImpl[T] {
+// The function is applied only if an error occurs.
+// Example usage:
+//
+//	handledFuture := future.Exceptionally(func(err error) int {
+//	    return -1
+//	})
+//
+// value, err := handledFuture.Get()
+// fmt.Println("Exceptionally Handled Value:", value)
+func (f *AtomstateFutureImplementation[T]) Exceptionally(function func(error) T) *AtomstateFutureImplementation[T] {
 	return f.Handle(func(value T, err error) T {
 		if err != nil {
 			return function(err)
@@ -209,7 +369,14 @@ func (f *AtomstateFutureImpl[T]) Exceptionally(function func(error) T) *Atomstat
 }
 
 // AllOf returns a new AtomstateFuture that is completed when all of the given futures are completed.
-func (f *AtomstateFutureImpl[T]) AllOf(futures ...*AtomstateFutureImpl[interface{}]) *AtomstateFutureImpl[struct{}] {
+// It completes with an error if any of the futures complete exceptionally.
+// Example usage:
+// future1 := NewAtomstateFuture[int]()
+// future2 := NewAtomstateFuture[int]()
+// allOfFuture := future.AllOf(future1, future2)
+// _, err := allOfFuture.Get()
+// fmt.Println("All futures completed:", err == nil)
+func (f *AtomstateFutureImplementation[T]) AllOf(futures ...*AtomstateFutureImplementation[interface{}]) *AtomstateFutureImplementation[struct{}] {
 	result := NewAtomstateFuture[struct{}]()
 	var wg sync.WaitGroup
 	var once sync.Once
@@ -219,7 +386,7 @@ func (f *AtomstateFutureImpl[T]) AllOf(futures ...*AtomstateFutureImpl[interface
 	wg.Add(len(futures))
 
 	for _, future := range futures {
-		go func(f *AtomstateFutureImpl[interface{}]) {
+		go func(f *AtomstateFutureImplementation[interface{}]) {
 			defer wg.Done()   // Decrement the wait group counter when done
 			_, err := f.Get() // Get the result of the future
 			if err != nil {
@@ -242,12 +409,19 @@ func (f *AtomstateFutureImpl[T]) AllOf(futures ...*AtomstateFutureImpl[interface
 }
 
 // AnyOf returns a new AtomstateFuture that is completed when any of the given futures are completed.
-func (f *AtomstateFutureImpl[T]) AnyOf(futures ...*AtomstateFutureImpl[T]) *AtomstateFutureImpl[T] {
+// It completes with the value of the first future that completes successfully.
+// Example usage:
+// future1 := NewAtomstateFuture[int]()
+// future2 := NewAtomstateFuture[int]()
+// anyOfFuture := future.AnyOf(future1, future2)
+// value, err := anyOfFuture.Get()
+// fmt.Println("Any future completed with value:", value, "Error:", err)
+func (f *AtomstateFutureImplementation[T]) AnyOf(futures ...*AtomstateFutureImplementation[T]) *AtomstateFutureImplementation[T] {
 	result := NewAtomstateFuture[T]()
 	var once sync.Once
 
 	for _, future := range futures {
-		go func(f *AtomstateFutureImpl[T]) {
+		go func(f *AtomstateFutureImplementation[T]) {
 			value, err := f.Get()
 			once.Do(func() {
 				if err != nil {
@@ -263,7 +437,11 @@ func (f *AtomstateFutureImpl[T]) AnyOf(futures ...*AtomstateFutureImpl[T]) *Atom
 }
 
 // Cancel cancels the future if possible.
-func (f *AtomstateFutureImpl[T]) Cancel() bool {
+// Returns true if the future was successfully cancelled, false otherwise.
+// Example usage:
+// cancelled := future.Cancel()
+// fmt.Println("Future cancelled:", cancelled)
+func (f *AtomstateFutureImplementation[T]) Cancel() bool {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.cancelled {
@@ -274,14 +452,30 @@ func (f *AtomstateFutureImpl[T]) Cancel() bool {
 }
 
 // IsCancelled checks if the future is cancelled.
-func (f *AtomstateFutureImpl[T]) IsCancelled() bool {
+// Example usage:
+//
+//	if future.IsCancelled() {
+//	    fmt.Println("Future is cancelled")
+//	} else {
+//
+//	    fmt.Println("Future is not cancelled")
+//	}
+func (f *AtomstateFutureImplementation[T]) IsCancelled() bool {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	return f.cancelled
 }
 
 // IsDone checks if the future is completed.
-func (f *AtomstateFutureImpl[T]) IsDone() bool {
+// Example usage:
+//
+//	if future.IsDone() {
+//	    fmt.Println("Future is completed")
+//	} else {
+//
+//	    fmt.Println("Future is not completed")
+//	}
+func (f *AtomstateFutureImplementation[T]) IsDone() bool {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	select {

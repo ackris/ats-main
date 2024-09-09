@@ -21,8 +21,8 @@ import (
 	"time"
 )
 
-// TestAtomstateFutureImpl_Get tests the Get method of AtomstateFutureImpl.
-func TestAtomstateFutureImpl_Get(t *testing.T) {
+// TestAtomstateFutureImplementation_Get tests the Get method of AtomstateFutureImpl.
+func TestAtomstateFutureImplementation_Get(t *testing.T) {
 	f := NewAtomstateFuture[int]()
 	err := f.Complete(42)
 	if err != nil {
@@ -34,8 +34,8 @@ func TestAtomstateFutureImpl_Get(t *testing.T) {
 	}
 }
 
-// TestAtomstateFutureImpl_CompleteExceptionally tests the CompleteExceptionally method.
-func TestAtomstateFutureImpl_CompleteExceptionally(t *testing.T) {
+// TestAtomstateFutureImplementation_CompleteExceptionally tests the CompleteExceptionally method.
+func TestAtomstateFutureImplementation_CompleteExceptionally(t *testing.T) {
 	f := NewAtomstateFuture[int]()
 	err := f.CompleteExceptionally(errors.New("an error"))
 	if err != nil {
@@ -47,8 +47,8 @@ func TestAtomstateFutureImpl_CompleteExceptionally(t *testing.T) {
 	}
 }
 
-// TestAtomstateFutureImpl_GetNow tests the GetNow method.
-func TestAtomstateFutureImpl_GetNow(t *testing.T) {
+// TestAtomstateFutureImplementation_GetNow tests the GetNow method.
+func TestAtomstateFutureImplementation_GetNow(t *testing.T) {
 	f := NewAtomstateFuture[int]()
 	value := f.GetNow(99)
 	if value != 99 {
@@ -64,9 +64,8 @@ func TestAtomstateFutureImpl_GetNow(t *testing.T) {
 	}
 }
 
-// TestAtomstateFutureImpl_ThenApply tests the ThenApply method.
-// TestAtomstateFutureImpl_ThenApply tests the ThenApply method.
-func TestAtomstateFutureImpl_ThenApply(t *testing.T) {
+// TestAtomstateFutureImplementation_ThenApply tests the ThenApply method.
+func TestAtomstateFutureImplementation_ThenApply(t *testing.T) {
 	f := NewAtomstateFuture[int]()
 	err := f.Complete(42)
 	if err != nil {
@@ -83,8 +82,8 @@ func TestAtomstateFutureImpl_ThenApply(t *testing.T) {
 	}
 }
 
-// TestAtomstateFutureImpl_ThenApplyAsync tests the ThenApplyAsync method.
-func TestAtomstateFutureImpl_ThenApplyAsync(t *testing.T) {
+// TestAtomstateFutureImplementation_ThenApplyAsync tests the ThenApplyAsync method.
+func TestAtomstateFutureImplementation_ThenApplyAsync(t *testing.T) {
 	f := NewAtomstateFuture[int]()
 	err := f.Complete(42)
 	if err != nil {
@@ -110,8 +109,8 @@ func TestAtomstateFutureImpl_ThenApplyAsync(t *testing.T) {
 	}
 }
 
-// TestAtomstateFutureImpl_WhenComplete tests the WhenComplete method.
-func TestAtomstateFutureImpl_WhenComplete(t *testing.T) {
+// TestAtomstateFutureImplementation_WhenComplete tests the WhenComplete method.
+func TestAtomstateFutureImplementation_WhenComplete(t *testing.T) {
 	// Create a new future and complete it
 	f := NewAtomstateFuture[int]()
 	f.Complete(42)
@@ -137,8 +136,8 @@ func TestAtomstateFutureImpl_WhenComplete(t *testing.T) {
 	}
 }
 
-// TestAtomstateFutureImpl_AllOf tests the AllOf method.
-func TestAtomstateFutureImpl_AllOf(t *testing.T) {
+// TestAtomstateFutureImplementation_AllOf tests the AllOf method.
+func TestAtomstateFutureImplementation_AllOf(t *testing.T) {
 	// Create futures with type int
 	f1 := NewAtomstateFuture[int]()
 	f2 := NewAtomstateFuture[int]()
@@ -172,8 +171,8 @@ func TestAtomstateFutureImpl_AllOf(t *testing.T) {
 	}
 }
 
-// TestAtomstateFutureImpl_AnyOf tests the AnyOf method.
-func TestAtomstateFutureImpl_AnyOf(t *testing.T) {
+// TestAtomstateFutureImplementation_AnyOf tests the AnyOf method.
+func TestAtomstateFutureImplementation_AnyOf(t *testing.T) {
 	f1 := NewAtomstateFuture[int]()
 	f2 := NewAtomstateFuture[int]()
 
@@ -212,8 +211,8 @@ func TestAtomstateFutureImpl_AnyOf(t *testing.T) {
 	}
 }
 
-// TestAtomstateFutureImpl_Cancel tests the Cancel method.
-func TestAtomstateFutureImpl_Cancel(t *testing.T) {
+// TestAtomstateFutureImplementation_Cancel tests the Cancel method.
+func TestAtomstateFutureImplementation_Cancel(t *testing.T) {
 	f := NewAtomstateFuture[int]()
 	cancelled := f.Cancel()
 	if !cancelled {
