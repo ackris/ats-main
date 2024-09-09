@@ -633,12 +633,17 @@ func (cl *Cluster) RemovePartition(topic string, partition int) {
 //
 // Output: Cluster{id='test-cluster', unauthorizedTopics=map[topic1:{}], invalidTopics=map[topic2:{}], isBootstrapConfigured=true, nodes=[{ID:1 Host:localhost:9092}]}
 func (cl *Cluster) String() string {
-	return fmt.Sprintf("Cluster{id='%s', unauthorizedTopics=%v, invalidTopics=%v, isBootstrapConfigured=%v, nodes=%v}",
+	var nodesStr string
+	for _, node := range cl.nodes {
+		nodesStr += fmt.Sprintf("{ID:%d Host:%s}", node.ID, node.Host)
+	}
+
+	return fmt.Sprintf("Cluster{id='%s', unauthorizedTopics=%v, invalidTopics=%v, isBootstrapConfigured=%v, nodes=[%s]}",
 		cl.clusterResource.clusterID,
 		cl.unauthorizedTopics,
 		cl.invalidTopics,
 		cl.isBootstrapConfigured,
-		cl.nodes)
+		nodesStr)
 }
 
 // Equals compares the current Cluster instance with another Cluster instance.

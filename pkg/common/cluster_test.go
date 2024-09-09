@@ -197,3 +197,67 @@ func TestAvailablePartitionsForTopic(t *testing.T) {
 		t.Fatalf("Expected 1 available partition for topic 'test-topic', got %d", len(availablePartitions))
 	}
 }
+
+// Helper function to create a sample Cluster
+func createSampleCluster() *Cluster {
+	return &Cluster{
+		clusterResource:       &ClusterResource{clusterID: "test-cluster"},
+		unauthorizedTopics:    map[string]struct{}{"topic1": {}},
+		invalidTopics:         map[string]struct{}{"topic2": {}},
+		isBootstrapConfigured: true,
+		nodes:                 []*Node{{ID: 1, Host: "localhost:9092"}},
+	}
+}
+
+// TestString tests the String() method of Cluster
+func TestClusterString(t *testing.T) {
+	cluster := createSampleCluster()
+	expected := "Cluster{id='test-cluster', unauthorizedTopics=map[topic1:{}], invalidTopics=map[topic2:{}], isBootstrapConfigured=true, nodes=[{ID:1 Host:localhost:9092}]}"
+	if got := cluster.String(); got != expected {
+		t.Errorf("String() = %v, want %v", got, expected)
+	}
+}
+
+// TestEquals tests the Equals() method of Cluster
+func TestClusterEquals(t *testing.T) {
+	cluster1 := createSampleCluster()
+	cluster2 := createSampleCluster()
+
+	if !cluster1.Equals(cluster2) {
+		t.Errorf("Equals() = false, want true")
+	}
+
+	cluster2.isBootstrapConfigured = false
+	if cluster1.Equals(cluster2) {
+		t.Errorf("Equals() = true, want false")
+	}
+}
+
+// TestHashCode tests the HashCode() method of Cluster
+func TestClusterHashCode(t *testing.T) {
+	cluster1 := createSampleCluster()
+	cluster2 := createSampleCluster()
+
+	if cluster1.HashCode() != cluster2.HashCode() {
+		t.Errorf("HashCode() = %v, want %v", cluster1.HashCode(), cluster2.HashCode())
+	}
+
+	cluster2.isBootstrapConfigured = false
+	if cluster1.HashCode() == cluster2.HashCode() {
+		t.Errorf("HashCode() = %v, want different", cluster2.HashCode())
+	}
+}
+
+// TestIsBootstrapConfigured tests the IsBootstrapConfigured() method of Cluster
+func TestIsBootstrapConfigured(t *testing.T) {
+	cluster := createSampleCluster()
+	if got := cluster.IsBootstrapConfigured(); !got {
+		t.Errorf("IsBootstrapConfigured() = %v, want true", got)
+	}
+
+	// Testing with a cluster where bootstrap is not configured
+	cluster.isBootstrapConfigured = false
+	if got := cluster.IsBootstrapConfigured(); got {
+		t.Errorf("IsBootstrapConfigured() = %v, want false", got)
+	}
+}
