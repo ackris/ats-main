@@ -27,6 +27,7 @@ type AtomstateFuture[T any] struct {
 	done      chan struct{}
 	cancelled bool
 	mu        sync.Mutex
+	once      sync.Once
 }
 
 // NewAtomstateFuture creates a new AtomstateFuture.
@@ -43,22 +44,26 @@ func CompletedFuture[T any](value T) *AtomstateFuture[T] {
 
 // Complete sets the result of the future.
 func (af *AtomstateFuture[T]) Complete(value T) {
-	af.mu.Lock()
-	defer af.mu.Unlock()
-	if af.err == nil {
-		af.result = value
-		close(af.done)
-	}
+	af.once.Do(func() {
+		af.mu.Lock()
+		defer af.mu.Unlock()
+		if af.err == nil && !af.cancelled {
+			af.result = value
+			close(af.done)
+		}
+	})
 }
 
 // CompleteExceptionally sets the error of the future.
 func (af *AtomstateFuture[T]) CompleteExceptionally(err error) {
-	af.mu.Lock()
-	defer af.mu.Unlock()
-	if af.err == nil {
-		af.err = err
-		close(af.done)
-	}
+	af.once.Do(func() {
+		af.mu.Lock()
+		defer af.mu.Unlock()
+		if af.err == nil && !af.cancelled {
+			af.err = err
+			close(af.done)
+		}
+	})
 }
 
 // IsDone checks if the future is completed.
@@ -100,6 +105,8 @@ func (af *AtomstateFuture[T]) Get() (T, error) {
 func (af *AtomstateFuture[T]) GetWithTimeout(timeout time.Duration) (T, error) {
 	select {
 	case <-time.After(timeout):
+		af.mu.Lock()
+		defer af.mu.Unlock()
 		return af.result, errors.New("timeout waiting for future")
 	case <-af.done:
 		return af.result, af.err
@@ -157,13 +164,15 @@ func (af *AtomstateFuture[T]) WhenComplete(action func(T, error)) *AtomstateFutu
 
 // Cancel cancels the future if not already completed.
 func (af *AtomstateFuture[T]) Cancel(mayInterruptIfRunning bool) bool {
-	af.mu.Lock()
-	defer af.mu.Unlock()
-	if af.cancelled || af.IsDone() {
-		return false
-	}
-	af.cancelled = true
-	close(af.done)
+	af.once.Do(func() {
+		af.mu.Lock()
+		defer af.mu.Unlock()
+		if af.cancelled || af.IsDone() {
+			return
+		}
+		af.cancelled = true
+		close(af.done)
+	})
 	return true
 }
 
