@@ -22,7 +22,16 @@ import (
 	resource "github.com/ackris/ats-main/pkg/resource"
 )
 
-// AclBindingFilter is a filter that can match AclBinding objects.
+// AclBindingFilter represents a filter for matching AclBinding objects.
+// It combines a ResourcePatternFilter and an AccessControlEntryFilter to determine if an AclBinding meets certain criteria.
+//
+// Example usage:
+//
+//	patternFilter, _ := resource.NewResourcePatternFilter(resource.TOPIC, "payments.", resource.PREFIXED)
+//	entryFilter := NewAccessControlEntryFilter("user1", "localhost", OpRead, ALLOW)
+//	filter, _ := NewAclBindingFilter(patternFilter, entryFilter)
+//	binding := NewAclBinding(pattern, entry)
+//	matches := filter.Matches(binding) // true if the binding matches the filters
 type AclBindingFilter struct {
 	patternFilter *resource.ResourcePatternFilter
 	entryFilter   *AccessControlEntryFilter
@@ -30,7 +39,24 @@ type AclBindingFilter struct {
 	once          sync.Once
 }
 
-// NewAclBindingFilter creates an instance of AclBindingFilter with the provided parameters.
+// NewAclBindingFilter creates a new instance of AclBindingFilter.
+//
+// Parameters:
+// - patternFilter: The resource pattern filter to use. Must not be nil.
+// - entryFilter: The access control entry filter to use. Must not be nil.
+//
+// Returns:
+// - A pointer to a new AclBindingFilter instance.
+// - An error if any of the filters are nil.
+//
+// Example usage:
+// patternFilter, _ := resource.NewResourcePatternFilter(resource.TOPIC, "payments.", resource.PREFIXED)
+// entryFilter := NewAccessControlEntryFilter("user1", "localhost", OpRead, ALLOW)
+// filter, err := NewAclBindingFilter(patternFilter, entryFilter)
+//
+//	if err != nil {
+//	    // Handle error
+//	}
 func NewAclBindingFilter(
 	patternFilter *resource.ResourcePatternFilter,
 	entryFilter *AccessControlEntryFilter) (*AclBindingFilter, error) {
@@ -43,27 +69,65 @@ func NewAclBindingFilter(
 	return &AclBindingFilter{patternFilter: patternFilter, entryFilter: entryFilter}, nil
 }
 
-// IsUnknown returns true if this filter has any UNKNOWN components.
+// IsUnknown checks if the filter has any UNKNOWN components.
+//
+// Returns:
+// - true if the patternFilter or entryFilter is unknown, false otherwise.
+//
+// Example usage:
+//
+//	unknown := filter.IsUnknown() // true if either filter component is unknown
 func (f *AclBindingFilter) IsUnknown() bool {
 	return f.patternFilter.IsUnknown() || f.entryFilter.IsUnknown()
 }
 
-// PatternFilter returns the resource pattern filter.
+// PatternFilter returns the resource pattern filter used by this AclBindingFilter.
+//
+// Returns:
+// - The resource pattern filter.
+//
+// Example usage:
+//
+//	patternFilter := filter.PatternFilter()
 func (f *AclBindingFilter) PatternFilter() *resource.ResourcePatternFilter {
 	return f.patternFilter
 }
 
-// EntryFilter returns the access control entry filter.
+// EntryFilter returns the access control entry filter used by this AclBindingFilter.
+//
+// Returns:
+// - The access control entry filter.
+//
+// Example usage:
+//
+//	entryFilter := filter.EntryFilter()
 func (f *AclBindingFilter) EntryFilter() *AccessControlEntryFilter {
 	return f.entryFilter
 }
 
 // String returns a string representation of the AclBindingFilter.
+//
+// Returns:
+// - A string describing the filter.
+//
+// Example usage:
+//
+//	fmt.Println(filter.String()) // Outputs the string representation of the filter
 func (f *AclBindingFilter) String() string {
 	return fmt.Sprintf("(patternFilter=%v, entryFilter=%v)", f.patternFilter, f.entryFilter)
 }
 
-// Equals checks if two AclBindingFilters are equal.
+// Equals checks if two AclBindingFilter instances are equal.
+//
+// Parameters:
+// - other: The other AclBindingFilter to compare with.
+//
+// Returns:
+// - true if both filters are equal, false otherwise.
+//
+// Example usage:
+//
+//	equal := filter.Equals(otherFilter) // true if filters are the same
 func (f *AclBindingFilter) Equals(other *AclBindingFilter) bool {
 	if other == nil {
 		return false
@@ -71,12 +135,27 @@ func (f *AclBindingFilter) Equals(other *AclBindingFilter) bool {
 	return f.patternFilter.Equal(other.patternFilter) && f.entryFilter.Equals(other.entryFilter)
 }
 
-// MatchesAtMostOne returns true if the resource and entry filters can only match one ACE.
+// MatchesAtMostOne checks if the resource and entry filters can only match one ACE.
+//
+// Returns:
+// - true if both patternFilter and entryFilter can only match one ACE, false otherwise.
+//
+// Example usage:
+//
+//	atMostOne := filter.MatchesAtMostOne() // true if the filters are restrictive
 func (f *AclBindingFilter) MatchesAtMostOne() bool {
 	return f.patternFilter.MatchesAtMostOne() && f.entryFilter.MatchesAtMostOne()
 }
 
-// FindIndefiniteField returns a string describing an ANY or UNKNOWN field, or nil if there is no such field.
+// FindIndefiniteField returns a description of any indefinite (ANY or UNKNOWN) field in the filters,
+// or an empty string if there is none.
+//
+// Returns:
+// - A string describing any indefinite field, or an empty string if none.
+//
+// Example usage:
+//
+//	indefinite := filter.FindIndefiniteField() // Returns a description of indefinite fields
 func (f *AclBindingFilter) FindIndefiniteField() string {
 	if indefinite := f.patternFilter.FindIndefiniteField(); indefinite != "" {
 		return indefinite
@@ -84,12 +163,30 @@ func (f *AclBindingFilter) FindIndefiniteField() string {
 	return f.entryFilter.FindIndefiniteField()
 }
 
-// Matches returns true if the resource filter matches the binding's resource and the entry filter matches the binding's entry.
+// Matches checks if the filter matches the given AclBinding.
+//
+// Parameters:
+// - binding: The AclBinding to match against the filter.
+//
+// Returns:
+// - true if the filter matches the binding's resource and entry, false otherwise.
+//
+// Example usage:
+//
+//	binding := NewAclBinding(pattern, entry)
+//	matches := filter.Matches(binding) // true if the binding matches the filter
 func (f *AclBindingFilter) Matches(binding *AclBinding) bool {
 	return f.patternFilter.Matches(binding.Pattern()) && f.entryFilter.Matches(binding.Entry())
 }
 
-// HashCode returns the hash code of the AclBindingFilter.
+// HashCode returns a hash code for the AclBindingFilter.
+//
+// Returns:
+// - A 64-bit unsigned integer representing the hash code.
+//
+// Example usage:
+//
+//	hashCode := filter.HashCode() // Hash code for the filter
 func (f *AclBindingFilter) HashCode() uint64 {
 	f.once.Do(func() {
 		patternHash := f.patternFilter.HashCode()
