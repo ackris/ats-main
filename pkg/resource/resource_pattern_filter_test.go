@@ -52,34 +52,53 @@ func TestAnyResourcePatternFilter(t *testing.T) {
 }
 
 func TestResourcePatternFilter_Matches(t *testing.T) {
+	// Test matching with LITERAL
 	filter, _ := NewResourcePatternFilter(TOPIC, "payments.received", LITERAL)
 	pattern, _ := NewResourcePattern(TOPIC, "payments.received", LITERAL)
-	if !filter.Matches(pattern) {
-		t.Errorf("ResourcePatternFilter should match the exact pattern")
-	}
-
-	filter, _ = NewResourcePatternFilter(TOPIC, "payments.", PREFIXED)
-	pattern, _ = NewResourcePattern(TOPIC, "payments.received", LITERAL)
 	if !filter.Matches(pattern) {
 		t.Errorf("Expected filter to match the pattern: filter=%s, pattern=%s", filter, pattern)
 	}
 
+	// Test matching with PREFIXED
+	filter, _ = NewResourcePatternFilter(TOPIC, "payments.", PREFIXED)
+	pattern, _ = NewResourcePattern(TOPIC, "payments.received", LITERAL)
+	if !filter.Matches(pattern) {
+		t.Errorf("Expected filter to match the prefixed pattern: filter=%s, pattern=%s", filter, pattern)
+	}
+
+	// Test wildcard matching
 	filter, _ = NewResourcePatternFilter(TOPIC, "*", LITERAL)
 	pattern, _ = NewResourcePattern(TOPIC, "payments.received", LITERAL)
 	if !filter.Matches(pattern) {
-		t.Errorf("ResourcePatternFilter should match the wildcard pattern")
+		t.Errorf("Expected filter to match the wildcard pattern: filter=%s, pattern=%s", filter, pattern)
 	}
 
+	// Test non-matching resource type
 	filter, _ = NewResourcePatternFilter(TOPIC, "payments.received", LITERAL)
 	pattern, _ = NewResourcePattern(GROUP, "payments.received", LITERAL)
 	if filter.Matches(pattern) {
-		t.Errorf("ResourcePatternFilter should not match a pattern with different resourceType")
+		t.Errorf("Expected filter to not match a pattern with different resourceType: filter=%s, pattern=%s", filter, pattern)
 	}
 
+	// Test non-matching pattern type
 	filter, _ = NewResourcePatternFilter(TOPIC, "payments.received", LITERAL)
 	pattern, _ = NewResourcePattern(TOPIC, "payments.received", PREFIXED)
 	if filter.Matches(pattern) {
-		t.Errorf("ResourcePatternFilter should not match a pattern with different patternType")
+		t.Errorf("Expected filter to not match a pattern with different patternType: filter=%s, pattern=%s", filter, pattern)
+	}
+
+	// Test empty name matches any pattern
+	filter, _ = NewResourcePatternFilter(TOPIC, "", LITERAL)
+	pattern, _ = NewResourcePattern(TOPIC, "payments.received", LITERAL)
+	if !filter.Matches(pattern) {
+		t.Errorf("Expected filter with empty name to match any pattern: filter=%s, pattern=%s", filter, pattern)
+	}
+
+	// Test ANY pattern type matches any pattern
+	filter, _ = NewResourcePatternFilter(TOPIC, "payments.received", ANY)
+	pattern, _ = NewResourcePattern(TOPIC, "payments.received", LITERAL)
+	if !filter.Matches(pattern) {
+		t.Errorf("Expected filter with ANY patternType to match any pattern: filter=%s, pattern=%s", filter, pattern)
 	}
 }
 

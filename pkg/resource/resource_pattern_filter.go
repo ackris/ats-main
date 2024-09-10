@@ -143,16 +143,24 @@ func (f *ResourcePatternFilter) Matches(pattern *ResourcePattern) bool {
 		return false
 	}
 
+	// Check if the resource types match
 	if f.resourceType != ALL_RESOURCES && f.resourceType != pattern.resourceType {
 		return false
 	}
 
+	// Check if the pattern types match
 	if f.patternType != ANY && f.patternType != MATCH && f.patternType != pattern.patternType {
 		return false
 	}
 
+	// If the filter name is empty, it matches any pattern
 	if f.name == "" {
 		return true
+	}
+
+	// Check name matches based on the pattern type
+	if f.patternType == ANY || f.patternType == pattern.patternType {
+		return f.name == pattern.name
 	}
 
 	return f.nameMatches(pattern)
@@ -167,18 +175,14 @@ func (f *ResourcePatternFilter) Matches(pattern *ResourcePattern) bool {
 // Returns:
 // - true if the name matches according to the filter's pattern type, false otherwise.
 func (f *ResourcePatternFilter) nameMatches(pattern *ResourcePattern) bool {
-	switch {
-	case f.patternType == ANY:
-		return true
-	case f.patternType == pattern.patternType:
-		return f.name == pattern.name || f.name == WILDCARD_RESOURCE
-	case f.patternType == PREFIXED:
-		// Match if the pattern name starts with the filter's name
-		return strings.HasPrefix(pattern.name, f.name)
-	case pattern.patternType == LITERAL:
+	switch pattern.patternType {
+	case LITERAL:
 		return f.name == pattern.name || pattern.name == WILDCARD_RESOURCE
+	case PREFIXED:
+		// Match if the filter's name starts with the pattern's name
+		return strings.HasPrefix(pattern.name, f.name)
 	default:
-		return false // Return false for unsupported pattern types
+		panic(fmt.Sprintf("Unsupported PatternType: %v", pattern.patternType))
 	}
 }
 

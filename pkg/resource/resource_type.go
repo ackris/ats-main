@@ -117,7 +117,7 @@ func (r ResourceType) Code() byte {
 
 // IsUnrecognized returns whether this resource type is UNRECOGNIZED.
 func (r ResourceType) IsUnrecognized() bool {
-	return r == UNRECOGNIZED
+	return r >= resourceTypeCount
 }
 
 // String returns the string representation of the ResourceType.
