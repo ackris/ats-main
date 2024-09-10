@@ -43,6 +43,9 @@ const (
 	PREFIXED // 4
 )
 
+// patternTypeCount represents the total number of PatternType constants.
+// const patternTypeCount = iota
+
 // String returns the string representation of the PatternType.
 func (p PatternType) String() string {
 	names := [...]string{

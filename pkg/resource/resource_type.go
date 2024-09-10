@@ -119,3 +119,11 @@ func (r ResourceType) Code() byte {
 func (r ResourceType) IsUnrecognized() bool {
 	return r == UNRECOGNIZED
 }
+
+// String returns the string representation of the ResourceType.
+func (r ResourceType) String() string {
+	if int(r) < len(resourceTypeNames) {
+		return resourceTypeNames[r]
+	}
+	return "UNKNOWN"
+}
