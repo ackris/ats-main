@@ -21,14 +21,35 @@ import (
 )
 
 // ResourcePatternFilter represents a filter that can match ResourcePattern.
+// This filter can be used to determine if a given ResourcePattern matches specific criteria
+// based on resource type, name, and pattern type.
 type ResourcePatternFilter struct {
-	resourceType ResourceType
-	name         string
-	patternType  PatternType
+	resourceType ResourceType // The type of resource this filter applies to.
+	name         string       // The name of the resource, can be empty or a specific name.
+	patternType  PatternType  // The type of pattern this filter uses.
 }
 
 // NewResourcePatternFilter creates a new ResourcePatternFilter.
-func NewResourcePatternFilter(resourceType ResourceType, name string, patternType PatternType) (*ResourcePatternFilter, error) {
+//
+// Parameters:
+// - resourceType: The type of resource to filter. Must not be UNRECOGNIZED.
+// - name: The name of the resource to filter. Can be empty or a specific name.
+// - patternType: The type of pattern to filter. Must not be UNKNOWN.
+//
+// Returns:
+// - A pointer to a new ResourcePatternFilter instance.
+// - An error if the resourceType is UNRECOGNIZED or patternType is UNKNOWN.
+//
+// Example usage:
+// filter, err := NewResourcePatternFilter(TOPIC, "payments.", PREFIXED)
+//
+//	if err != nil {
+//	    // Handle error
+//	}
+func NewResourcePatternFilter(
+	resourceType ResourceType,
+	name string,
+	patternType PatternType) (*ResourcePatternFilter, error) {
 	if resourceType == UNRECOGNIZED {
 		return nil, errors.New("resourceType cannot be UNRECOGNIZED")
 	}
@@ -43,32 +64,80 @@ func NewResourcePatternFilter(resourceType ResourceType, name string, patternTyp
 }
 
 // AnyResourcePatternFilter creates a filter that matches any resource pattern.
+// This is a convenience function that returns a filter with ALL_RESOURCES type,
+// an empty name, and ANY pattern type.
+//
+// Returns:
+// - A pointer to a new ResourcePatternFilter instance that matches any resource pattern.
+//
+// Example usage:
+// filter := AnyResourcePatternFilter()
 func AnyResourcePatternFilter() *ResourcePatternFilter {
 	filter, _ := NewResourcePatternFilter(ALL_RESOURCES, "", ANY)
 	return filter
 }
 
 // IsUnknown checks if the filter has any UNKNOWN components.
+//
+// Returns:
+// - true if the resourceType is UNRECOGNIZED or the patternType is UNKNOWN, false otherwise.
+//
+// Example usage:
+//
+//	if filter.IsUnknown() {
+//	    // Handle unknown filter
+//	}
 func (f *ResourcePatternFilter) IsUnknown() bool {
 	return f.resourceType == UNRECOGNIZED || f.patternType == UNKNOWN
 }
 
 // ResourceType returns the specific resource type this pattern matches.
+//
+// Returns:
+// - The resource type of the filter.
+//
+// Example usage:
+// resType := filter.ResourceType()
 func (f *ResourcePatternFilter) ResourceType() ResourceType {
 	return f.resourceType
 }
 
 // Name returns the resource name.
+//
+// Returns:
+// - The name of the resource in the filter.
+//
+// Example usage:
+// name := filter.Name()
 func (f *ResourcePatternFilter) Name() string {
 	return f.name
 }
 
 // PatternType returns the resource pattern type.
+//
+// Returns:
+// - The pattern type of the filter.
+//
+// Example usage:
+// patternType := filter.PatternType()
 func (f *ResourcePatternFilter) PatternType() PatternType {
 	return f.patternType
 }
 
 // Matches checks if the filter matches the given ResourcePattern.
+//
+// Parameters:
+// - pattern: A pointer to a ResourcePattern to match against this filter.
+//
+// Returns:
+// - true if the filter matches the pattern, false otherwise.
+//
+// Example usage:
+// pattern, _ := NewResourcePattern(TOPIC, "payments.received", LITERAL)
+//
+//	if filter.Matches(pattern) {
+//	    // The filter matches the pattern
+//	}
 func (f *ResourcePatternFilter) Matches(pattern *ResourcePattern) bool {
 	if pattern == nil {
 		return false
@@ -90,6 +159,13 @@ func (f *ResourcePatternFilter) Matches(pattern *ResourcePattern) bool {
 }
 
 // nameMatches checks if the name matches based on the pattern type.
+// This method is used internally by the Matches method.
+//
+// Parameters:
+// - pattern: A pointer to a ResourcePattern to match against this filter.
+//
+// Returns:
+// - true if the name matches according to the filter's pattern type, false otherwise.
 func (f *ResourcePatternFilter) nameMatches(pattern *ResourcePattern) bool {
 	switch {
 	case f.patternType == ANY:
@@ -107,11 +183,24 @@ func (f *ResourcePatternFilter) nameMatches(pattern *ResourcePattern) bool {
 }
 
 // MatchesAtMostOne checks if the filter could only match one pattern.
+//
+// Returns:
+// - true if there are no ANY or UNKNOWN fields in the filter, false otherwise.
+//
+// Example usage:
+//
+//	if filter.MatchesAtMostOne() {
+//	    // The filter can only match one pattern
+//	}
 func (f *ResourcePatternFilter) MatchesAtMostOne() bool {
 	return f.findIndefiniteField() == ""
 }
 
 // findIndefiniteField returns a string describing any indefinite field, or an empty string if none.
+// This method is used internally to determine if the filter has any indefinite components.
+//
+// Returns:
+// - A string describing any indefinite field or an empty string if none.
 func (f *ResourcePatternFilter) findIndefiniteField() string {
 	switch {
 	case f.resourceType == ALL_RESOURCES:
