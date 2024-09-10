@@ -15,6 +15,7 @@
 package acl
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -46,23 +47,29 @@ type AccessControlEntry struct {
 func NewAccessControlEntry(
 	principal, host string,
 	operation AclOperation,
-	permissionType AclPermissionType) *AccessControlEntry {
+	permissionType AclPermissionType) (*AccessControlEntry, error) {
 	if principal == "" {
-		panic("principal cannot be empty")
+		return nil, errors.New("principal cannot be empty")
 	}
 	if host == "" {
-		panic("host cannot be empty")
+		return nil, errors.New("host cannot be empty")
 	}
 	if operation == OpAny {
-		panic("operation must not be ANY")
+		return nil, errors.New("operation must not be ANY")
 	}
 	if permissionType == ANY {
-		panic("permissionType must not be ANY")
+		return nil, errors.New("permissionType must not be ANY")
+	}
+	if operation == OpUnknown {
+		return nil, errors.New("operation must not be UNKNOWN")
+	}
+	if permissionType == UNKNOWN {
+		return nil, errors.New("permissionType must not be UNKNOWN")
 	}
 
 	return &AccessControlEntry{
 		data: NewAccessControlEntryData(principal, host, operation, permissionType),
-	}
+	}, nil
 }
 
 // Principal returns the principal for this entry.

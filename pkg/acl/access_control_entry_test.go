@@ -25,7 +25,7 @@ func TestNewAccessControlEntry(t *testing.T) {
 		host           string
 		operation      AclOperation
 		permissionType AclPermissionType
-		expectPanic    bool
+		expectError    bool
 	}{
 		{"user1", "host1", OpRead, ALLOW, false},
 		{"user2", "host2", OpWrite, DENY, false},
@@ -36,52 +36,68 @@ func TestNewAccessControlEntry(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if test.expectPanic {
-			defer func() {
-				if r := recover(); r == nil {
-					t.Errorf("Expected panic for principal: %s, host: %s", test.principal, test.host)
-				}
-			}()
+		_, err := NewAccessControlEntry(test.principal, test.host, test.operation, test.permissionType)
+		if (err != nil) != test.expectError {
+			t.Errorf("Expected error: %v, got: %v for principal: %s, host: %s", test.expectError, (err != nil), test.principal, test.host)
 		}
-		NewAccessControlEntry(test.principal, test.host, test.operation, test.permissionType)
 	}
 }
 
 // TestAccessControlEntryMethods tests the methods of AccessControlEntry.
 func TestAccessControlEntryMethods(t *testing.T) {
-	ace := NewAccessControlEntry("user1", "host1", OpRead, ALLOW)
-
-	if principal := ace.Principal(); principal != "user1" {
-		t.Errorf("Expected principal to be 'user1', got '%s'", principal)
+	// Create valid AccessControlEntry
+	ace, err := NewAccessControlEntry("user1", "host1", OpRead, ALLOW)
+	if err != nil {
+		t.Fatalf("Failed to create AccessControlEntry: %v", err)
 	}
 
-	if host := ace.Host(); host != "host1" {
-		t.Errorf("Expected host to be 'host1', got '%s'", host)
-	}
+	t.Run("principal", func(t *testing.T) {
+		if principal := ace.Principal(); principal != "user1" {
+			t.Errorf("Expected principal to be 'user1', got '%s'", principal)
+		}
+	})
 
-	if operation := ace.Operation(); operation != OpRead {
-		t.Errorf("Expected operation to be OpRead, got %d", operation)
-	}
+	t.Run("host", func(t *testing.T) {
+		if host := ace.Host(); host != "host1" {
+			t.Errorf("Expected host to be 'host1', got '%s'", host)
+		}
+	})
 
-	if permissionType := ace.PermissionType(); permissionType != ALLOW {
-		t.Errorf("Expected permissionType to be ALLOW, got %d", permissionType)
-	}
+	t.Run("operation", func(t *testing.T) {
+		if operation := ace.Operation(); operation != OpRead {
+			t.Errorf("Expected operation to be OpRead, got %d", operation)
+		}
+	})
 
-	// Testing IsUnknown
-	if ace.IsUnknown() {
-		t.Error("Expected IsUnknown to return false")
-	}
+	t.Run("permission_type", func(t *testing.T) {
+		if permissionType := ace.PermissionType(); permissionType != ALLOW {
+			t.Errorf("Expected permissionType to be ALLOW, got %d", permissionType)
+		}
+	})
 
-	// Create a new AccessControlEntry with UNKNOWN values
-	unknownAce := NewAccessControlEntry("user2", "host2", OpUnknown, UNKNOWN)
-	if !unknownAce.IsUnknown() {
-		t.Error("Expected IsUnknown to return true")
-	}
+	// Testing IsUnknown with valid data
+	t.Run("is_unknown", func(t *testing.T) {
+		if ace.IsUnknown() {
+			t.Error("Expected IsUnknown to return false")
+		}
+	})
+
+	// Test case for known UNKNOWN value should be handled in a different context or test
+	t.Run("cannot_create_with_UNKNOWN_permissionType", func(t *testing.T) {
+		_, err := NewAccessControlEntry("user2", "host2", OpRead, UNKNOWN)
+		if err == nil {
+			t.Error("Expected error when creating AccessControlEntry with UNKNOWN permissionType, but got none")
+		}
+	})
 }
 
 // TestAccessControlEntryString tests the string representation of AccessControlEntry.
 func TestAccessControlEntryString(t *testing.T) {
-	ace := NewAccessControlEntry("user1", "host1", OpRead, ALLOW)
+	ace, err := NewAccessControlEntry("user1", "host1", OpRead, ALLOW)
+	if err != nil {
+		t.Fatalf("Failed to create AccessControlEntry: %v", err)
+	}
+
 	expected := "AccessControlEntry{Principal: user1, Host: host1, Operation: 3, PermissionType: 3}"
 	if ace.String() != expected {
 		t.Errorf("Expected string representation to be '%s', got '%s'", expected, ace.String())
@@ -90,9 +106,20 @@ func TestAccessControlEntryString(t *testing.T) {
 
 // TestAccessControlEntryEquals tests the Equals method.
 func TestAccessControlEntryEquals(t *testing.T) {
-	ace1 := NewAccessControlEntry("user1", "host1", OpRead, ALLOW)
-	ace2 := NewAccessControlEntry("user1", "host1", OpRead, ALLOW) // Same parameters
-	ace3 := NewAccessControlEntry("user2", "host2", OpWrite, DENY)
+	ace1, err := NewAccessControlEntry("user1", "host1", OpRead, ALLOW)
+	if err != nil {
+		t.Fatalf("Failed to create AccessControlEntry: %v", err)
+	}
+
+	ace2, err := NewAccessControlEntry("user1", "host1", OpRead, ALLOW) // Same parameters
+	if err != nil {
+		t.Fatalf("Failed to create AccessControlEntry: %v", err)
+	}
+
+	ace3, err := NewAccessControlEntry("user2", "host2", OpWrite, DENY)
+	if err != nil {
+		t.Fatalf("Failed to create AccessControlEntry: %v", err)
+	}
 
 	if !ace1.Equals(ace2) {
 		t.Error("Expected ace1 to be equal to ace2")
@@ -109,7 +136,11 @@ func TestAccessControlEntryEquals(t *testing.T) {
 
 // TestAccessControlEntryHashCode tests the HashCode method.
 func TestAccessControlEntryHashCode(t *testing.T) {
-	ace := NewAccessControlEntry("user1", "host1", OpRead, ALLOW)
+	ace, err := NewAccessControlEntry("user1", "host1", OpRead, ALLOW)
+	if err != nil {
+		t.Fatalf("Failed to create AccessControlEntry: %v", err)
+	}
+
 	hashCode := ace.HashCode()
 	if hashCode == 0 {
 		t.Error("Expected HashCode to be non-zero")

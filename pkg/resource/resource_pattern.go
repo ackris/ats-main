@@ -17,6 +17,7 @@ package resource
 import (
 	"errors"
 	"fmt"
+	"hash/fnv"
 )
 
 // ResourcePattern represents a pattern used by ACLs to match zero or more resources.
@@ -133,11 +134,11 @@ func (rp *ResourcePattern) IsUnknown() bool {
 // Example:
 //
 //	fmt.Println(rp.String())
-func (p *ResourcePattern) String() string {
+func (rp *ResourcePattern) String() string {
 	return fmt.Sprintf("ResourcePattern{resourceType=%s, name=%q, patternType=%s}",
-		p.resourceType.String(),
-		p.name,
-		p.patternType.String())
+		rp.resourceType.String(),
+		rp.name,
+		rp.patternType.String())
 }
 
 // Equals checks if two ResourcePatterns are equal.
@@ -156,4 +157,19 @@ func (p *ResourcePattern) String() string {
 func (rp *ResourcePattern) Equals(other *ResourcePattern) bool {
 	return other != nil && rp.resourceType == other.resourceType &&
 		rp.name == other.name && rp.patternType == other.patternType
+}
+
+// HashCode computes the hash code for the Resource struct.
+func (r *ResourcePattern) HashCode() uint64 {
+	if r == nil {
+		return 0 // Return a default hash value if the ResourcePattern is nil
+	}
+
+	h := fnv.New64a() // Create a new FNV-1a hash
+
+	// Combine fields into a single byte slice to minimize writes
+	data := []byte(r.ResourceType().String() + r.Name() + r.PatternType().String())
+	h.Write(data) // Write the combined data to the hash
+
+	return h.Sum64() // Return the computed hash code
 }

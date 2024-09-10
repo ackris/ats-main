@@ -17,6 +17,7 @@ package resource
 import (
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"strings"
 )
 
@@ -197,15 +198,15 @@ func (f *ResourcePatternFilter) nameMatches(pattern *ResourcePattern) bool {
 //	    // The filter can only match one pattern
 //	}
 func (f *ResourcePatternFilter) MatchesAtMostOne() bool {
-	return f.findIndefiniteField() == ""
+	return f.FindIndefiniteField() == ""
 }
 
-// findIndefiniteField returns a string describing any indefinite field, or an empty string if none.
+// FindIndefiniteField returns a string describing any indefinite field, or an empty string if none.
 // This method is used internally to determine if the filter has any indefinite components.
 //
 // Returns:
 // - A string describing any indefinite field or an empty string if none.
-func (f *ResourcePatternFilter) findIndefiniteField() string {
+func (f *ResourcePatternFilter) FindIndefiniteField() string {
 	switch {
 	case f.resourceType == ALL_RESOURCES:
 		return "Resource type is ALL_RESOURCES."
@@ -220,6 +221,24 @@ func (f *ResourcePatternFilter) findIndefiniteField() string {
 	default:
 		return ""
 	}
+}
+
+// Equal method to compare two ResourcePatternFilter instances
+func (r *ResourcePatternFilter) Equal(other *ResourcePatternFilter) bool {
+	if other == nil {
+		return false
+	}
+	return r.resourceType == other.resourceType &&
+		r.name == other.name &&
+		r.patternType == other.patternType
+}
+
+// Hash method to generate a hash value for the ResourcePatternFilter
+func (r *ResourcePatternFilter) HashCode() uint64 {
+	h := fnv.New64a()
+	// Combine fields into a single string for hashing
+	fmt.Fprintf(h, "%d-%s-%d", int(r.resourceType), r.name, int(r.patternType))
+	return h.Sum64()
 }
 
 // String returns a string representation of the ResourcePatternFilter.

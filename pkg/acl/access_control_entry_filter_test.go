@@ -18,6 +18,7 @@ import (
 	"testing"
 )
 
+// TestNewAccessControlEntryFilter tests the creation of AccessControlEntryFilter.
 func TestNewAccessControlEntryFilter(t *testing.T) {
 	t.Run("valid_parameters", func(t *testing.T) {
 		filter := NewAccessControlEntryFilter("user", "host", OpRead, ALLOW)
@@ -113,23 +114,30 @@ func TestAccessControlEntryFilter(t *testing.T) {
 }
 
 func TestAccessControlEntryFilter_Matches(t *testing.T) {
-	filter := NewAccessControlEntryFilter("user", "host", OpRead, ALLOW)
-
 	t.Run("matches_entry", func(t *testing.T) {
-		entry := NewAccessControlEntry("user", "host", OpRead, ALLOW)
+		filter := NewAccessControlEntryFilter("user", "host", OpRead, ALLOW)
+		entry, err := NewAccessControlEntry("user", "host", OpRead, ALLOW)
+		if err != nil {
+			t.Fatalf("Failed to create AccessControlEntry: %v", err)
+		}
 		if !filter.Matches(entry) {
 			t.Errorf("Matches() returned false, expected true")
 		}
 	})
 
 	t.Run("does_not_match_entry", func(t *testing.T) {
-		entry := NewAccessControlEntry("user", "host", OpWrite, ALLOW)
+		filter := NewAccessControlEntryFilter("user", "host", OpRead, ALLOW)
+		entry, err := NewAccessControlEntry("user", "host", OpWrite, ALLOW)
+		if err != nil {
+			t.Fatalf("Failed to create AccessControlEntry: %v", err)
+		}
 		if filter.Matches(entry) {
 			t.Errorf("Matches() returned true, expected false")
 		}
 	})
 
 	t.Run("does_not_match_nil_entry", func(t *testing.T) {
+		filter := NewAccessControlEntryFilter("user", "host", OpRead, ALLOW)
 		if filter.Matches(nil) {
 			t.Errorf("Matches() returned true when matching against nil")
 		}
@@ -197,7 +205,10 @@ func TestAccessControlEntryFilter_Nil(t *testing.T) {
 
 func BenchmarkAccessControlEntryFilter_Matches(b *testing.B) {
 	filter := NewAccessControlEntryFilter("user", "host", OpRead, ALLOW)
-	entry := NewAccessControlEntry("user", "host", OpRead, ALLOW)
+	entry, err := NewAccessControlEntry("user", "host", OpRead, ALLOW)
+	if err != nil {
+		b.Fatalf("Failed to create AccessControlEntry: %v", err)
+	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
