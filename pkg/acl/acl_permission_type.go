@@ -45,6 +45,12 @@ var codeToValue = [maxAclPermissionType]string{
 }
 
 // String returns the string representation of the AclPermissionType.
+// If the permission type is out of bounds, it returns "UNKNOWN".
+//
+// Example usage:
+//
+//	var permission AclPermissionType = ALLOW
+//	fmt.Println(permission.String()) // Output: ALLOW
 func (apt AclPermissionType) String() string {
 	if apt >= 0 && int(apt) < len(codeToValue) {
 		return codeToValue[apt]
@@ -52,7 +58,17 @@ func (apt AclPermissionType) String() string {
 	return "UNKNOWN"
 }
 
-// FromString parses the given string as an ACL permission.
+// FromString parses the given string as an ACL permission and returns the corresponding
+// AclPermissionType. If the string does not match any known permission type, it returns
+// UNKNOWN.
+//
+// Example usage:
+//
+//	permission := FromString("deny")
+//	fmt.Println(permission) // Output: DENY
+//
+//	invalidPermission := FromString("invalid")
+//	fmt.Println(invalidPermission) // Output: UNKNOWN
 func FromString(str string) AclPermissionType {
 	str = strings.ToUpper(str)
 	for i, s := range codeToValue {
@@ -63,12 +79,25 @@ func FromString(str string) AclPermissionType {
 	return UNKNOWN
 }
 
-// Code returns the code of this permission type.
+// Code returns the code of this permission type, which is the AclPermissionType itself.
+//
+// Example usage:
+//
+//	permission := ALLOW
+//	fmt.Println(permission.Code()) // Output: ALLOW
 func (apt AclPermissionType) Code() AclPermissionType {
 	return apt
 }
 
 // IsUnknown returns true if this permission type is UNKNOWN.
+//
+// Example usage:
+//
+//	var permission AclPermissionType = UNKNOWN
+//	fmt.Println(permission.IsUnknown()) // Output: true
+//
+//	permission = ALLOW
+//	fmt.Println(permission.IsUnknown()) // Output: false
 func (apt AclPermissionType) IsUnknown() bool {
 	return apt == UNKNOWN
 }
