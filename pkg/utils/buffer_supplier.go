@@ -173,3 +173,24 @@ func (g *GrowableBufferSupplier) Close() {
 	defer g.mu.Unlock()
 	g.cachedBuffer = nil
 }
+
+// the below is for unit testing and integration testing purposes.
+// MockBufferSupplier is a simple mock implementation of BufferSupplier for testing.
+type MockBufferSupplier struct {
+	buffers [][]byte
+}
+
+func (m *MockBufferSupplier) Get(capacity int) []byte {
+	if len(m.buffers) > 0 {
+		buf := m.buffers[0]
+		m.buffers = m.buffers[1:]
+		return buf
+	}
+	return make([]byte, capacity)
+}
+
+func (m *MockBufferSupplier) Release(buffer []byte) {
+	m.buffers = append(m.buffers, buffer)
+}
+
+func (m *MockBufferSupplier) Close() {}
