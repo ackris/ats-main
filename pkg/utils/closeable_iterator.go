@@ -14,6 +14,8 @@
 
 package utils
 
+import "errors"
+
 // Iterator defines the basic iteration interface.
 // It provides methods to check if there are more elements to iterate over
 // and to retrieve the next element.
@@ -77,4 +79,107 @@ func (ci *closeableIterator[T]) Next() (T, error) {
 // It calls the closer function and returns any error encountered.
 func (ci *closeableIterator[T]) Close() error {
 	return ci.closer()
+}
+
+type FlattenedIterator[O any, I any] struct {
+	outerIterator     Iterator[O]
+	innerIteratorFunc func(O) Iterator[I]
+	innerIterator     Iterator[I]
+	closed            bool
+}
+
+func NewFlattenedIterator[O any, I any](outerIterator Iterator[O], innerIteratorFunc func(O) Iterator[I]) *FlattenedIterator[O, I] {
+	return &FlattenedIterator[O, I]{
+		outerIterator:     outerIterator,
+		innerIteratorFunc: innerIteratorFunc,
+	}
+}
+
+func (f *FlattenedIterator[O, I]) HasNext() bool {
+	if f.closed {
+		return false
+	}
+
+	// Ensure we have a valid inner iterator and it has next elements
+	for {
+		if f.innerIterator != nil && f.innerIterator.HasNext() {
+			return true
+		}
+
+		// Move to the next outer element if available
+		if !f.outerIterator.HasNext() {
+			return false
+		}
+
+		outerItem, err := f.outerIterator.Next()
+		if err != nil {
+			return false
+		}
+
+		// Set the new inner iterator
+		f.innerIterator = f.innerIteratorFunc(outerItem)
+	}
+}
+
+func (f *FlattenedIterator[O, I]) Next() (I, error) {
+	var zeroValue I
+
+	if f.closed {
+		return zeroValue, errors.New("iterator is closed")
+	}
+
+	if !f.HasNext() {
+		return zeroValue, errors.New("no more elements")
+	}
+
+	// Retrieve the next element from the inner iterator
+	return f.innerIterator.Next()
+}
+
+func (f *FlattenedIterator[O, I]) Close() error {
+	if f.closed {
+		return nil
+	}
+
+	// Close the outer iterator if it implements Closeable
+	if closeable, ok := f.outerIterator.(Closeable); ok {
+		if err := closeable.Close(); err != nil {
+			return err
+		}
+	}
+
+	// Close the inner iterator if it implements Closeable
+	if f.innerIterator != nil {
+		if closeable, ok := f.innerIterator.(Closeable); ok {
+			if err := closeable.Close(); err != nil {
+				return err
+			}
+		}
+	}
+
+	f.closed = true
+	return nil
+}
+
+// SimpleIterator is a concrete implementation of the Iterator interface for testing.
+type SimpleIterator struct {
+	data  []int
+	index int
+}
+
+func NewSimpleIterator(data []int) *SimpleIterator {
+	return &SimpleIterator{data: data, index: 0}
+}
+
+func (si *SimpleIterator) HasNext() bool {
+	return si.index < len(si.data)
+}
+
+func (si *SimpleIterator) Next() (int, error) {
+	if !si.HasNext() {
+		return 0, errors.New("no more elements")
+	}
+	val := si.data[si.index]
+	si.index++
+	return val, nil
 }
