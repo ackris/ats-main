@@ -14,7 +14,11 @@
 
 package utils
 
-import "hash"
+import (
+	"errors"
+	"hash"
+	"hash/crc32"
+)
 
 // UpdateChecksum updates the given checksum with the contents of the buffer slice.
 // It handles buffer slices efficiently without modifying the buffer's position or limit.
@@ -85,4 +89,92 @@ func UpdateLong(checksum hash.Hash, value int64) {
 	bytes[6] = byte(value >> 8)
 	bytes[7] = byte(value)
 	checksum.Write(bytes[:])
+}
+
+// CRC32C is a wrapper around the CRC32C checksum computation.
+// It provides methods for computing the CRC32C checksum of byte slices.
+type CRC32C struct {
+	hash hash.Hash32
+}
+
+// NewCRC32C creates a new instance of CRC32C.
+// It initializes the CRC32C instance with the Castagnoli polynomial.
+//
+// Example:
+//
+//	crc32c := utils.NewCRC32C()
+func NewCRC32C() *CRC32C {
+	return &CRC32C{
+		hash: crc32.New(crc32.MakeTable(crc32.Castagnoli)),
+	}
+}
+
+// Compute computes the CRC32C checksum of a byte slice.
+//
+// Parameters:
+//
+//	data: The byte slice containing data for which the checksum needs to be computed.
+//
+// Returns:
+//
+//	The computed CRC32C checksum as a uint32 value.
+//	An error if any occurred during the checksum computation.
+//
+// Example:
+//
+//	crc32c := utils.NewCRC32C()
+//	data := []byte("Hello, CRC32C!")
+//	checksum, err := crc32c.Compute(data)
+//	if err != nil {
+//		// Handle error
+//		return
+//	}
+//	fmt.Println("CRC32C Checksum:", checksum)
+func (c *CRC32C) Compute(data []byte) (uint32, error) {
+	_, err := c.hash.Write(data)
+	if err != nil {
+		return 0, err
+	}
+	return c.hash.Sum32(), nil
+}
+
+// ComputeWithOffset computes the CRC32C checksum of a segment of the byte slice
+// given by the specified offset and length.
+//
+// Parameters:
+//
+//	data: The byte slice containing data for which the checksum needs to be computed.
+//	offset: The starting index of the segment within the byte slice.
+//	length: The number of bytes to include in the checksum computation, starting from the offset.
+//
+// Returns:
+//
+//	The computed CRC32C checksum as a uint32 value.
+//	An error if any occurred during the checksum computation or if the offset and length are invalid.
+//
+// Example:
+//
+//	crc32c := utils.NewCRC32C()
+//	data := []byte("Hello, CRC32C!")
+//	checksum, err := crc32c.ComputeWithOffset(data, 7, 6) // "CRC32C"
+//	if err != nil {
+//		// Handle error
+//		return
+//	}
+//	fmt.Println("CRC32C Checksum with offset:", checksum)
+func (c *CRC32C) ComputeWithOffset(data []byte, offset, length int) (uint32, error) {
+	if offset < 0 || length < 0 || offset+length > len(data) {
+		return 0, errors.New("invalid offset or length")
+	}
+	_, err := c.hash.Write(data[offset : offset+length])
+	if err != nil {
+		return 0, err
+	}
+	return c.hash.Sum32(), nil
+}
+
+// Reset resets the CRC32C instance for reuse.
+// It clears the internal state of the CRC32C instance, allowing it to be used for computing new checksums.
+func (c *CRC32C) Reset() {
+	c.hash.Reset()
 }
